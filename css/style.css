@@ -1,0 +1,103 @@
+/* re-soft 全局样式：浅色主题，干净排版，无第三方依赖 */
+
+/* 基础重置：盒模型统一，去掉默认外边距 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* 宽度包含 padding 与 border，布局更可控 */
+}
+
+/* 页面整体字体与背景 */
+body {
+  font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; /* 优先系统字体，中文回退雅黑 */
+  background: #f7f8fa; /* 浅灰背景，护眼 */
+  color: #1f2329; /* 深灰正文，浅色主题标准对比 */
+  line-height: 1.6; /* 行高宽松，易读 */
+}
+
+/* 顶部标题栏 */
+.site-header {
+  display: flex; /* 横向排列品牌名与版本徽标 */
+  align-items: center;
+  gap: 12px; /* 品牌名与徽标间距 */
+  padding: 16px 24px;
+  background: #ffffff; /* 白色栏 */
+  border-bottom: 1px solid #e5e6eb; /* 底部细线分隔 */
+}
+
+/* 品牌名 */
+.brand {
+  font-size: 22px;
+  font-weight: 700; /* 加粗，突出项目名 */
+  color: #2d6cdf; /* 主色蓝 */
+}
+
+/* 版本徽标 */
+.version-badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 10px; /* 胶囊形 */
+  background: #eef3ff; /* 浅蓝底 */
+  color: #2d6cdf; /* 与主色一致 */
+}
+
+/* 主体内容最大宽度并居中 */
+.site-main {
+  max-width: 860px;
+  margin: 0 auto; /* 水平居中 */
+  padding: 32px 24px;
+}
+
+/* 欢迎区 */
+.hero {
+  text-align: center;
+  padding: 40px 0;
+}
+
+/* 副标题弱化 */
+.subtitle {
+  color: #646a73; /* 中灰，次级信息 */
+  margin: 12px 0 24px;
+}
+
+/* 主操作按钮 */
+.cta-button {
+  font-size: 15px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 8px;
+  background: #2d6cdf; /* 主色蓝 */
+  color: #fff;
+  cursor: pointer; /* 鼠标手型，提示可点击 */
+  transition: background 0.2s; /* 悬停渐变 */
+}
+
+/* 按钮悬停态 */
+.cta-button:hover {
+  background: #1f5bc0; /* 深一档蓝 */
+}
+
+/* 占位区块 */
+.placeholder {
+  margin-top: 32px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #e5e6eb;
+  border-radius: 12px; /* 圆角卡片 */
+}
+
+/* JS 输出反馈区 */
+.output {
+  margin-top: 12px;
+  min-height: 24px;
+  color: #2d6cdf;
+  font-weight: 600;
+}
+
+/* 页脚 */
+.site-footer {
+  text-align: center;
+  padding: 24px;
+  color: #969aa3; /* 浅灰，弱化 */
+  font-size: 13px;
+}

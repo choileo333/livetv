@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<!-- re-soft 项目入口页：单页静态站点，零构建依赖，浏览器直接打开即可 -->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" /> <!-- 统一用 UTF-8，避免中文乱码 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <!-- 移动端自适应 -->
+  <title>re-soft v1.0.0</title> <!-- 页面标题含版本号 -->
+  <link rel="stylesheet" href="css/style.css" /> <!-- 引入外部样式表 -->
+</head>
+<body>
+  <!-- 顶部标题栏：展示项目名与版本徽标 -->
+  <header class="site-header">
+    <h1 class="brand">re-soft</h1>
+    <span class="version-badge" id="versionBadge">v1.0.0</span>
+  </header>
+
+  <!-- 主体内容区：当前为占位骨架，具体功能后续填充 -->
+  <main class="site-main">
+    <section class="hero">
+      <h2>欢迎来到 re-soft</h2>
+      <p class="subtitle">这是一个新建的 Web 项目脚手架，功能尚未填充。</p>
+      <button class="cta-button" id="ctaButton">点我测试交互</button> <!-- 用于验证 JS 是否加载 -->
+    </section>
+
+    <section class="placeholder">
+      <h3>功能占位区</h3>
+      <p>告诉我要做哪类功能（表单 / 图表 / 工具 / 展示页…），我再把这块替换掉。</p>
+      <div id="output" class="output"></div> <!-- JS 输出反馈区 -->
+    </section>
+  </main>
+
+  <!-- 页脚：版权与版本信息 -->
+  <footer class="site-footer">
+    <span>re-soft &copy; 2026</span>
+  </footer>
+
+  <script src="js/app.js"></script> <!-- 引入主脚本 -->
+</body>
+</html>
