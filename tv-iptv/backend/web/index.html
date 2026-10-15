@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TvLive 演示 · 你自己的 TV 直播</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- hls.js：浏览器播放 HLS（.m3u8）。已本地化托管（hls.min.js），不依赖外部 CDN。
+       生产 App 端用 ExoPlayer，无需此库。 -->
+  <script src="hls.min.js"></script>
+</head>
+<body>
+  <header>
+    <span class="logo">TvLive</span>
+    <span class="sub">你自己的 TV 直播演示（同源后端）</span>
+    <!-- 模式切换：直播 / 回放 -->
+    <div class="modebar">
+      <button id="btnModeLive" class="mode-btn active">直播</button>
+      <button id="btnModeReplay" class="mode-btn">回放</button>
+    </div>
+    <span class="status" id="status">连接中…</span>
+  </header>
+
+  <main id="liveWrap">
+    <!-- 左：频道列表 -->
+    <section class="channels">
+      <div class="bar">
+        <button id="btnFilter">仅看收藏</button>
+        <button id="btnCheck">重测可达性</button>
+        <button id="btnRelay" class="on">中继：开</button>
+        <span class="legend"><i class="dot ok"></i>流畅 <i class="dot slow"></i>偏慢 <i class="dot dead"></i>不可用 <i class="dot checking"></i>检测中</span>
+        <span id="chCount"></span>
+      </div>
+      <ul id="chList"></ul>
+    </section>
+
+    <!-- 中：播放器 -->
+    <section class="stage">
+      <video id="video" controls autoplay></video>
+      <div id="playHint" class="hint">点击左侧频道开始播放</div>
+      <div id="stageMsg" class="stage-msg hidden"></div>
+      <!-- 模拟遥控器数字键盘 -->
+      <div id="numPad" class="numpad hidden">
+        <div id="numBuffer" class="num-buffer"></div>
+        <div class="pad-grid">
+          <button data-d="1">1</button><button data-d="2">2</button><button data-d="3">3</button>
+          <button data-d="4">4</button><button data-d="5">5</button><button data-d="6">6</button>
+          <button data-d="7">7</button><button data-d="8">8</button><button data-d="9">9</button>
+          <button data-d="0">0</button><button data-d="ok" class="ok">切台</button><button data-d="x" class="x">清除</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右：EPG + 收藏 -->
+    <section class="epg">
+      <h3 id="epgTitle">节目单</h3>
+      <div id="epgNow" class="epg-now">—</div>
+      <div id="epgNext" class="epg-next">—</div>
+      <button id="btnFav" class="fav-btn">☆ 收藏当前频道</button>
+      <p class="tip">提示：键盘按数字键弹出切台键盘，Enter 切台；F 收藏，P 切换收藏筛选。</p>
+    </section>
+  </main>
+
+  <!-- 回放模式：指向外部回放站（地址可在本页随时修改，存浏览器本地，无需改代码） -->
+  <section id="replayWrap" class="replay hidden">
+    <div class="replay-card">
+      <h2 class="replay-title">往期回放</h2>
+      <p class="replay-sub">回放内容已内嵌在下方窗口，可在顶部「直播 / 回放」之间随时来回切换。站内页面可直接点击浏览；下方「回放地址」可随时改成新的站点，无需改动程序。</p>
+
+      <div class="replay-row">
+        <label class="replay-label" for="replayUrlInput">回放地址</label>
+        <input id="replayUrlInput" class="replay-input" type="text" spellcheck="false"
+               placeholder="https://…" autocomplete="off" />
+        <button id="btnReplaySave" class="replay-btn ghost">保存</button>
+        <button id="btnReplayReset" class="replay-btn ghost">重置默认</button>
+      </div>
+
+      <div class="replay-actions">
+        <button id="btnReplayReload" class="replay-btn primary">⟳ 刷新</button>
+        <button id="btnReplayHome" class="replay-btn ghost">回默认页</button>
+        <button id="btnReplayOpen" class="replay-btn ghost">↗ 新窗口打开原站</button>
+        <span id="replayMsg" class="replay-msg"></span>
+      </div>
+
+      <div id="replayFrameBox" class="replay-frame-box">
+        <!--
+          回放站内嵌窗口。属性说明：
+          ① sandbox —— 限制第三方脚本越权（不允许顶层跳转、不允许下载），不影响播放，保留；
+          ② referrerpolicy="strict-origin-when-cross-origin" + allow + allowfullscreen ——
+             与「直接在原站打开」保持一致的默认行为，并给跨域子框架授予「自动播放 / 加密媒体 / 全屏 / 画中画」权限
+             （播放器的全屏按钮需要这些权限），否则体验会打折。
+          注意：真正让「点进详情能播」的关键不在前端，而在后端（/api/embed 把播放器也接管了、
+          由服务端补上播放器要求的 Referer）。详见 server.js 里 PLAYER_HOSTS / PLAYER_PATCH 的说明。
+        -->
+        <iframe id="replayFrame" class="replay-frame"
+                referrerpolicy="strict-origin-when-cross-origin"
+                allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                allowfullscreen
+                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <script src="app.js"></script>
+</body>
+</html>

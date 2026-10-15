@@ -1,0 +1,69 @@
+<!doctype html><meta charset="utf-8"><title>e2e</title>
+<body style="margin:0">
+<!-- 临时端到端验证页：完全复刻 index.html 的回放 iframe 属性，走真实链路「回放站详情页 → 播放器」，
+     再（因为播放器也被代理成同源了）直接驱动 video 元素，实测能否真的播出画面。验证完即删。 -->
+<pre id="out" style="position:fixed;left:0;top:0;z-index:9;background:#fff;color:#000;font:13px monospace;margin:0;padding:4px">E2E running…</pre>
+<iframe id="f" width="1200" height="600"
+  src="/api/embed?url=https%3A%2F%2Fwww.dodotv20.com%2Fshplay.php%3Fid%3D65adffbec341389fbc25729183ea5cbeae485e283cc93c4fb12ce4bfd16e7ee0"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen
+  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation"></iframe>
+<script>
+const RES = [];
+const show = () => {
+  const txt = RES.join("\n");
+  document.getElementById("out").textContent = txt;
+  // 同时用信标回报给收集器（无头浏览器会抢跑退出，靠这个把真实播放状态传出来）
+  new Image().src = "http://127.0.0.1:8803/r?d=" + encodeURIComponent(txt);
+};
+function findPlayer() {
+  const w = document.getElementById("f").contentWindow;
+  for (let i = 0; i < w.frames.length; i++) {
+    try { const c = w.frames[i]; if (String(c.location.href).indexOf("xiaoca.top") >= 0) return c; } catch (e) {}
+  }
+  return null;
+}
+let tries = 0, started = false;
+const timer = setInterval(() => {
+  tries++;
+  const p = findPlayer();
+  if (!p) { RES[0] = "WAIT player frame… " + tries; show(); return; }
+  RES[0] = "FOUND player: " + String(p.location.href).slice(0, 70);
+  try {
+    const doc = p.document;
+    const art = p.art, v = doc.querySelector("video");
+    if (!p.__diag) {
+      p.__diag = 1;
+      try { p.addEventListener("error", (e) => { RES[6] = "PLAYER ERROR: " + (e.message || e.type); show(); }, true); } catch (e) {}
+      const h = doc.documentElement.outerHTML;
+      RES[1] = "DIAG art=" + (typeof p.art) + " Hls=" + (typeof p.Hls) + " Artplayer=" + (typeof p.Artplayer) +
+               " base64_decode=" + (typeof p.base64_decode) +
+               " videos=" + doc.querySelectorAll("video").length +
+               " container=" + !!doc.getElementById("video-container") +
+               " phpsiteEc2=" + /phpsiteEc2/.test(h) +
+               " relayInHtml=" + /\/api\/relay\?/.test(h);
+    }
+    RES[2] = "art.url=" + (art && art.url ? String(art.url).slice(0, 90) : "(" + (art ? "empty" : "no art") + ")") +
+             " art.option.url=" + (art && art.option && art.option.url ? String(art.option.url).slice(0, 60) : "-");
+    if (!v) { RES[3] = "no <video>"; show(); return; }
+    v.muted = true;
+    // 每一轮都催一次播放：Artplayer 是「点了才加载」的惰性播放器
+    try { if (art && art.play) { art.play(); RES[4] = "art.play(); art.type=" + art.type + " art.url=" + (art.url ? "有" : "空"); } else { v.play(); RES[4] = "video.play() 直接调用"; } }
+    catch (e) { RES[4] = "play() threw " + e; }
+    if (started) {
+      RES[3] = "video readyState=" + v.readyState + " currentTime=" + v.currentTime.toFixed(2) +
+               " duration=" + (isNaN(v.duration) ? "NaN" : v.duration.toFixed(1)) +
+               " " + v.videoWidth + "x" + v.videoHeight + " paused=" + v.paused +
+               " buffered=" + (v.buffered.length ? v.buffered.end(0).toFixed(1) : 0) +
+               " src=" + String(v.src || "").slice(0, 30);
+    }
+    started = true;
+  } catch (e) { RES[5] = "introspect err: " + e; }
+  show();
+  if (RES[3] && /currentTime=([0-9.]+)/.test(RES[3]) && parseFloat(RegExp.$1) > 3) {
+    RES[9] = "===== E2E-PLAYBACK-CONFIRMED ====="; show(); clearInterval(timer);
+  }
+  if (tries > 45) { RES[9] = "===== E2E-TIMEOUT ====="; show(); clearInterval(timer); }
+}, 700);
+</script>
+</body>

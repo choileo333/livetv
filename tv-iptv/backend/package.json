@@ -1,0 +1,10 @@
+{
+  "name": "tvlive-backend",
+  "version": "1.0.0",
+  "description": "TvLive 自有后端示例：下发频道列表与 EPG（零依赖，纯 Node http）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "license": "MIT"
+}

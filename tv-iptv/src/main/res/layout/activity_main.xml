@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- 左侧：频道列表（电视端用方向键导航） -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_channels"
+        android:layout_width="320dp"
+        android:layout_height="match_parent"
+        android:background="#111111" />
+
+    <!-- 中间：视频播放区 -->
+    <androidx.media3.ui.PlayerView
+        android:id="@+id/player_view"
+        android:layout_width="0dp"
+        android:layout_weight="1"
+        android:layout_height="match_parent"
+        android:background="#000000" />
+
+    <!-- 右侧：节目单(EPG) + 收藏面板 -->
+    <LinearLayout
+        android:layout_width="340dp"
+        android:layout_height="match_parent"
+        android:background="#1a1a1f"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tv_epg_title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"
+            android:text="节目单" />
+
+        <TextView
+            android:id="@+id/tv_epg_now"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:padding="10dp"
+            android:background="#232330"
+            android:textColor="#FFFFFF"
+            android:text="—" />
+
+        <TextView
+            android:id="@+id/tv_epg_next"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:padding="10dp"
+            android:background="#1d1d24"
+            android:textColor="#9a9aa2"
+            android:text="—" />
+
+        <Button
+            android:id="@+id/btn_fav"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="☆ 收藏当前频道" />
+
+        <Button
+            android:id="@+id/btn_filter"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="仅看收藏" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:textSize="12sp"
+            android:textColor="#9a9aa2"
+            android:text="遥控器：数字键切台，F 收藏，P 切换收藏筛选" />
+    </LinearLayout>
+
+</LinearLayout>
