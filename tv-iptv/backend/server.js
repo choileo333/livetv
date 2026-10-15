@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.14"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.15"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 
 // 往期回放站地址（前端「回放」模式的默认地址）。
 // 因该地址可能经常变动：前端页面内可随时覆盖（存浏览器 localStorage），无需改代码/重新部署；
@@ -149,9 +149,8 @@ const CHANNELS = [
   {"id": 160, "name": "CGTN English (央视国际英语)", "url": "https://english-livebkali.cgtn.com/live/encgtn.m3u8", "logo": "", "group": "新闻", "note": "CGTN 英语新闻 · 官方 cgtn.com 域名源，经上海云端中继可达（v0.3.9 恢复，此前误删）"},
   {"id": 161, "name": "NHK World-Japan (日本放送协会)", "url": "https://media-osa.hls.nhkworld.jp/hls/w/live/master.m3u8", "logo": "", "group": "新闻", "note": "NHK World 国际频道 · 官方 nhkworld.jp 域名源，经上海云端中继可达（v0.3.9 恢复，此前误删）"},
   {"id": 162, "name": "Al Jazeera (半岛电视台)", "url": "https://live-hls-web-aja.getaj.net/AJA/index.m3u8", "logo": "", "group": "新闻", "note": "半岛电视台 · 官方 getaj.net CDN 源，经上海云端中继可达（v0.3.9 恢复，此前误删）。注：当前中继可稳定取到的是 AJA 主频（阿语），英文台 AJE 中继暂不可达"},
-  {"id": 163, "name": "凤凰卫视中文台", "url": "http://223.110.245.139/ott.js.chinamobile.com/PLTV/3/224/3221226922/index.m3u8", "logo": "", "group": "新闻", "relay": false, "note": "凤凰卫视中文台 · 中国移动 IPTV 国内源（iptv-org 标注 PhoenixChineseChannel）。上海中继无法直连该源，已设为【本机直连】模式；需你的家宽能访问中国移动 IPTV CDN（通常仅移动宽带可用），且可能受浏览器跨域限制。若打不开请反馈，我再换方案"},
-  {"id": 164, "name": "CCTV-13 新闻频道 (央视新闻)", "url": "http://74.91.26.218:82/live/cctv13hd.m3u8", "logo": "", "group": "新闻", "note": "央视新闻频道 · 源站分片路径为 cctv13md，iptv-org 标注 CCTV13.cn@HD（v0.3.9 替换原 hebtv/jishi 假源）。请点开肉眼确认台标"},
-  {"id": 165, "name": "CCTV-1 综合 (央视一套)", "url": "http://74.91.26.218:82/live/cctv1hd.m3u8", "logo": "", "group": "新闻", "note": "央视综合频道 · 源站分片路径为 cctv1，iptv-org 标注 CCTV1.cn@HD（v0.3.9 替换原 voc/花垣 假源）。请点开肉眼确认台标"},
+  {"id": 164, "name": "CCTV-13 新闻频道 (央视新闻)", "url": "http://219.147.245.238:25480/newlive/live/hls/14/live.m3u8", "logo": "", "group": "新闻", "note": "央视新闻频道 · 江苏电信 IPTV 网关源（v0.3.15 替换美国 VPS 山寨源 74.91.26.218）。已抽帧验证台标为「CCTV 13 新闻」，中继全链路 200（v0.3.15）"},
+  {"id": 165, "name": "CCTV-1 综合 (央视一套)", "url": "http://219.147.245.238:25480/newlive/live/hls/1/live.m3u8", "logo": "", "group": "新闻", "note": "央视综合频道 · 江苏电信 IPTV 网关源（v0.3.15 替换美国 VPS 山寨源 74.91.26.218）。已抽帧验证台标为「CCTV 1 综合」，中继全链路 200（v0.3.15）"},
 ];
 
 // 每个频道的节目单标题池（用于动态生成 EPG）
@@ -207,7 +206,6 @@ const EPG_TITLES = {
   160: ["CGTN English · 直播", "CGTN English · 精选", "CGTN English · 热门", "CGTN English · 回放"],
   161: ["NHK World-Japan · 直播", "NHK World-Japan · 精选", "NHK World-Japan · 热门", "NHK World-Japan · 回放"],
   162: ["Al Jazeera · 直播", "Al Jazeera · 精选", "Al Jazeera · 热门", "Al Jazeera · 回放"],
-  163: ["凤凰卫视中文台 · 直播", "凤凰卫视中文台 · 精选", "凤凰卫视中文台 · 热门", "凤凰卫视中文台 · 回放"],
   164: ["CCTV-13 新闻频道 · 直播", "CCTV-13 新闻频道 · 精选", "CCTV-13 新闻频道 · 热门", "CCTV-13 新闻频道 · 回放"],
   165: ["CCTV-1 综合 · 直播", "CCTV-1 综合 · 精选", "CCTV-1 综合 · 热门", "CCTV-1 综合 · 回放"],
 };

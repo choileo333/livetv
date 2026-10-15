@@ -1,13 +1,14 @@
 # TvLive 当前状态快照 / 交接文档
 
-> 快照时间：**2026-10-15 09:4x（GMT+8）**（本次为 v0.3.14「YTN 换官方源」交付后更新；此前快照 2026-10-12 17:xx）
+> 快照时间：**2026-10-15 11:2x（GMT+8）**（本次为 v0.3.15「CCTV-1/13 换真台源 + 凤凰摘除」交付后更新）
 > 用途：用户暂停工作（休息），下次续接时按本文档即可回到现场，无需重新排查。
 > 维护规范：每次阶段性暂停时更新本文档；逐版改动细节见同目录 `HISTORY.md`。
 
 ---
 
 ## 一、当前版本
-- 后端 `server.js`：**v0.3.14**（`VERSION` 常量在第 17 行；`/api/health` 会返回版本号）
+- 后端 `server.js`：**v0.3.15**（`VERSION` 常量在第 17 行；`/api/health` 会返回版本号）
+  - v0.3.15：**CCTV-1（id=165）/ CCTV-13（id=164）** 换成江苏电信 IPTV 网关真台源 `219.147.245.238:25480`（ffmpeg 抽帧验证台标）；**凤凰卫视（id=163）摘除**——系统性排查后确认无任何可用公开源（详见 HISTORY v0.3.15 排查表）。
   - v0.3.14：把 **YTN（id=105）** 的死源换成 **YTN 官方源** `ytnlive.ytn.co.kr`（清单/分片/中继全通，无签名无加密）。
   - v0.3.11 起新增：`REPLAY_URL` + `GET /api/config`、`GET /api/embed`（内嵌代理，破 XFO/CSP）、`GET /api/relay` 的 `raw=1` / `ref=` 支持
 - 前端：`backend/web/`（`index.html` / `app.js` / `style.css` / `hls.min.js`），后端 URL 用 `BACKEND = ""`（同源），本地与云端通用
@@ -34,7 +35,10 @@
 - 部署入口：`domainPrefix = tvlive-relay`，`appName = TvLive 电视直播`。
 
 ## 三、频道现状
-- **总数 60**：韩国 34 / 测试 1 / 新闻 4 / 音乐 3 / 纪录片 5 / 体育 3 / 电影 10
+- **总数 58**（v0.3.15 起，凤凰卫视已摘除）：韩国 34 / 测试 1 / 新闻 3 / 音乐 3 / 纪录片 5 / 体育 3 / 电影 10
+- **v0.3.15 频道结论（重要，勿重复排查）**：
+  - CCTV-1 = `219.147.245.238:25480/newlive/live/hls/1/live.m3u8`、CCTV-13 = `.../hls/14/...`。该江苏电信网关 hls/1–17 全为央视、40–50 西部卫视、85–107 各省卫视（已逐台抽帧识别），**不含凤凰/KTBS 等其它台**。
+  - **凤凰卫视无任何可用公开源**（ifeng 官方 ID 失效仅剩静态占位、央视式 DRM、移动/联通/电信 IPTV 后端云端全不可达、凤凰秀 HLS 变体 CDN `livehwc4.com` 本机+云端均不可达、fanmingming 权威清单无凤凰）。后续若用户再提凤凰，先看 HISTORY v0.3.15 排查表，勿重复扫源。
 - 已按用户要求做的清理：删除全部儿童频道、印度台（含 B4U 全系、Alankar、Cricket Gold、**All Time Movies（Hindi）**）、不知名体育台（非洲/阿拉伯/astrahan.ru/canal）、美国/阿拉伯/伊朗/阿根廷的小众电影台（30A TV / Aflam / Afra Film / AlternaTV）、`HLxx-DTV` 地区台去重（仅保留 `HLAO-DTV 720p`）、**`KBS Joy`（唯一公开源是冻结假直播，不可修复）**
 - **v0.3.3 新增**：韩台 `Daejeon MBC`、`Daegu MBC`、`Chuncheon MBC`、`CJB Cheongju SBS`、`GCN`；修复 `EBS 1TV` 源；新增 10 个优质电影台（Hallmark / MovieSphere 系 / Rakuten TV / Ebony TV by Lionsgate / Warner TV Asia / HBO Hits / AMC / Popcorn Central / MyTime UK）
 - 韩国台已置顶（前 6：TV Chosun、TV Chosun 2、Arirang TV、Arirang TV HD、Arirang Radio、KTV）
