@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.15"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.16"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 
 // 往期回放站地址（前端「回放」模式的默认地址）。
 // 因该地址可能经常变动：前端页面内可随时覆盖（存浏览器 localStorage），无需改代码/重新部署；
@@ -151,6 +151,7 @@ const CHANNELS = [
   {"id": 162, "name": "Al Jazeera (半岛电视台)", "url": "https://live-hls-web-aja.getaj.net/AJA/index.m3u8", "logo": "", "group": "新闻", "note": "半岛电视台 · 官方 getaj.net CDN 源，经上海云端中继可达（v0.3.9 恢复，此前误删）。注：当前中继可稳定取到的是 AJA 主频（阿语），英文台 AJE 中继暂不可达"},
   {"id": 164, "name": "CCTV-13 新闻频道 (央视新闻)", "url": "http://219.147.245.238:25480/newlive/live/hls/14/live.m3u8", "logo": "", "group": "新闻", "note": "央视新闻频道 · 江苏电信 IPTV 网关源（v0.3.15 替换美国 VPS 山寨源 74.91.26.218）。已抽帧验证台标为「CCTV 13 新闻」，中继全链路 200（v0.3.15）"},
   {"id": 165, "name": "CCTV-1 综合 (央视一套)", "url": "http://219.147.245.238:25480/newlive/live/hls/1/live.m3u8", "logo": "", "group": "新闻", "note": "央视综合频道 · 江苏电信 IPTV 网关源（v0.3.15 替换美国 VPS 山寨源 74.91.26.218）。已抽帧验证台标为「CCTV 1 综合」，中继全链路 200（v0.3.15）"},
+  {"id": 166, "name": "G1 (SBS 江原)", "url": "http://61.82.49.4:1935/live/_definst_/tv.stream/playlist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "SBS 江原道地方台 · v0.3.16 新增。抽帧验证台标「G1 SBS」，1280x720/30fps/~1.26Mbps，连续 3 段 200 稳定。⚠️ 该源仅【本机直连】可用：上海云端中继不可达（504），故须你的家宽能直连韩国 IP；App 端 WebView 已允许混合内容（http 源可播），纯浏览器 https 页面可能被拦截"},
 ];
 
 // 每个频道的节目单标题池（用于动态生成 EPG）
@@ -208,6 +209,7 @@ const EPG_TITLES = {
   162: ["Al Jazeera · 直播", "Al Jazeera · 精选", "Al Jazeera · 热门", "Al Jazeera · 回放"],
   164: ["CCTV-13 新闻频道 · 直播", "CCTV-13 新闻频道 · 精选", "CCTV-13 新闻频道 · 热门", "CCTV-13 新闻频道 · 回放"],
   165: ["CCTV-1 综合 · 直播", "CCTV-1 综合 · 精选", "CCTV-1 综合 · 热门", "CCTV-1 综合 · 回放"],
+  166: ["G1 (SBS 江原) · 直播", "G1 (SBS 江原) · 精选", "G1 (SBS 江原) · 热门", "G1 (SBS 江原) · 回放"],
 };
 
 // 根据当前时间动态生成某频道的 EPG（过去 1 档 + 现在 + 未来 3 档，每档 30 分钟）

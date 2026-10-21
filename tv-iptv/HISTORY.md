@@ -2,6 +2,44 @@
 
 > 按用户既定规范：每次改动记录「时间 + 改了什么 + 为什么」。文件名/程序内含版本号，原稿只读、新版本独立派生。
 
+## v0.3.16 — 2026-10-21 13:3x（新增 G1「SBS 江原」；SBS 地方台全量复查）
+
+### 1) 用户诉求
+- "你今天再去找一下 SBS有没有别的地方台的播放源"
+
+### 2) 候选盘点（SBS 九家地方加盟台逐一实测）
+| 台 | 候选地址 | 本机 | 上海中继 | 结论 |
+|---|---|---|---|---|
+| **G1 (강원)** | `http://61.82.49.4:1935/live/_definst_/tv.stream/playlist.m3u8` | ✅ 3/3 段 200，1464/1681/1571 KB，1.26Mbps，1280×720 30fps | ❌ 504 | **新增**（仅本机直连） |
+| CJB (청주) | `http://1.222.207.80:1935/live/cjbtv/playlist.m3u8` | ✅ 302KB 段 | ✅ 200（1.0s） | 已在库，抽帧复核「CJB SBS」真台 |
+| JTV (전주) | `http://61.85.197.53:1935/jtv_live/myStream/playlist.m3u8` | ✅ 1.26MB 段 | ✅ 200（0.6s） | 已在库，抽帧复核「JTV SBS」真台 |
+| KNN (부산) | `stream1.knn.co.kr/hls/.../index.m3u8`；`211.220.195.200:1935` | ❌ 403（nginx，IP 白名单，换 UA/Referer 无效）/ 主清单 404 | ❌ 403 | 不可用 |
+| KBC (광주) | `119.200.131.11:1935/KBCTV`；`vod.ikbc.co.kr/KBCTV` | ❌ 400/连接失败 | ❌ 502/504 | 不可用 |
+| TBC (대구) | `221.157.125.239:1935/live/psike`；`tistory3.daumcdn.net/.../Public_8.m3u8` | ❌ 明文请求 → "sent to HTTPS port"(CF)；TLS1.2/1.3 握手均失败；daumcdn 404 | ❌ 504 | 不可用 |
+| TJB (대전) | `1.245.74.5:1935/live/tv/.m3u8` | ❌ 死 | ❌ 504 | 不可用 |
+| UBC (울산) | `59.23.231.102:1935`；`stream.ubc.co.kr` | ❌ 死 / DNS 失败 | ❌ 502/504 | 不可用 |
+| JIBS (제주) | `123.140.197.22/stream/1/play.m3u8` → `media.jibs.co.kr/stream/1_2000_149771/` | ⚠️ 清单 http=200（自签证书、需 `-k`），但**分片持续 000** | ❌ 504 | 不可用（半通） |
+| SBS Plus / Star / International | `streaming-a-802.cdn.nextologies.com/...` | ❌ DNS 不通 | ❌ 502 | 不可用 |
+
+另测：`ythls.armelin.one`（YouTube→HLS 转接）**已死**，本地与云端均不通 → 走不通"用 YouTube 源救被锁台"这条路。
+
+### 3) 改动
+- 新增 **id=166「G1 (SBS 江原)」**：`http://61.82.49.4:1935/live/_definst_/tv.stream/playlist.m3u8`，`group=韩国`，`relay:false`（云端不可达，只能本机直连；App 端 WebView 已设 `MIXED_CONTENT_ALWAYS_ALLOW`，http 源可播；纯浏览器 https 页面可能被混合内容策略拦）。
+- `VERSION` 0.3.15 → **0.3.16**；新增 EPG 条目 166；安卓测试夹具同步至 59 条。
+
+### 4) 验证
+| 项 | 结果 |
+|---|---|
+| `node --check` | 通过 |
+| 线上 `/api/health` | `{ok:true, version:"0.3.16"}` |
+| 线上 `/api/channels` | 59 台，166 = G1 relay=false，SBS 系共 4 条（CJB/JTV/SBS 首尔/G1） |
+| 抽帧 | G1 帧右上角「G1 SBS」；CJB 帧「CJB SBS」；JTV 帧「JTV SBS」——均为真台 |
+| 稳定性 | G1 连续 3 个 10s 分片全 200，约 1.26Mbps |
+
+### 5) 诚实边界
+- SBS 地方台普遍**锁韩国 IP 或只走自家 App**（KNN 明确 IP 白名单）。能同时被"你家宽 + 上海云端"取到的只有 CJB、JTV；G1 只在你家宽这一侧可用。
+- 之前标记"碰运气"的 `SBS (首尔主台)`（id=140，`azure2986.fastedge.net`）本次复测 **DNS 解析失败**，实质已死。
+
 ## v0.3.15 — 2026-10-15 11:2x（CCTV-1/13 换真台源；凤凰卫视摘除）
 
 ### 1) 用户诉求
