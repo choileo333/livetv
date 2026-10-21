@@ -2,6 +2,27 @@
 
 > 按用户既定规范：每次改动记录「时间 + 改了什么 + 为什么」。文件名/程序内含版本号，原稿只读、新版本独立派生。
 
+## v0.3.19 — 2026-10-21 17:1x（Arirang 两台改韩文名 + 删 HD 台）
+
+### 1) 用户诉求
+- 「Arirang TV 改成 아리랑 TV，Arirang Radio 改成 아리랑 라디오；然后删除 Arirang TV HD」
+
+### 2) 改动明细
+
+| id | 原名 | 新名 / 处理 | 源 |
+|---|---|---|---|
+| 103 | Arirang TV (1080p) | **아리랑 TV** | `http://amdlive-ch01.ctnd.com.edgesuite.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8`（未动） |
+| 102 | Arirang Radio (720p) | **아리랑 라디오** | `http://amdlive-ch01.ctnd.com.edgesuite.net/arirang_3ch/smil:arirang_3ch.smil/playlist.m3u8`（未动） |
+| 104 | Arirang TV HD (720p) | **删除** | `http://45.162.64.114/ARIRANG/index.m3u8` |
+
+**同步范围**：`CHANNELS` + `EPG_TITLES`（104 在标题表里一并移除）；102/103 的 url、logo、group、note 一字未动（**刻意没往 note 里塞画质后缀**——用户明确要求"只是改名字"）。
+
+### 3) 结果
+- 频道总数 **55 → 54**；韩国组 **28 → 27**（可用 22 → 21，不可用/不稳仍 6）。
+- 线上 `/api/health` = `0.3.19`；`/api/channels` 54 条、韩国 27 条；104 已不存在；102/103 名与 EPG 标题均为韩文新名。
+- 安卓测试夹具 `channels_live.json` 54 条；`reports/kr-channels-2026-10-21.*` 同步（新闻·综合组 7 → 6 台，统计数字与说明已更新）。
+- 删掉的 104 源地址保留在本文件，后续若需要可恢复。
+
 ## v0.3.18 — 2026-10-21 17:0x（3 台教会台改编号名）
 
 ### 1) 用户诉求

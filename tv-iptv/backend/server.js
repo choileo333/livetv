@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.18"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.19"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 
 // 往期回放站地址（前端「回放」模式的默认地址）。
 // 因该地址可能经常变动：前端页面内可随时覆盖（存浏览器 localStorage），无需改代码/重新部署；
@@ -95,9 +95,8 @@ function prefetchSegments(urls, refererOrigin) {
 const CHANNELS = [
   {"id": 101, "name": "TV 조선", "url": "http://onair.cdn.tvchosun.com/origin1/_definst_/tvchosun_s1/playlist.m3u8", "logo": "https://i.imgur.com/62EwaCG.png", "group": "韩国", "note": "公开免费韩国直播（iptv-org）"},
   {"id": 100, "name": "TV조선2", "url": "http://onair2.cdn.tvchosun.com/origin2/_definst_/tvchosun_s3/playlist.m3u8", "logo": "https://i.imgur.com/Ev5JoBJ.png", "group": "韩国", "note": "公开免费韩国直播（iptv-org）"},
-  {"id": 103, "name": "Arirang TV (1080p)", "url": "http://amdlive-ch01.ctnd.com.edgesuite.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8", "logo": "https://i.imgur.com/Asu5pE9.png", "group": "韩国", "note": "公开免费韩国直播（iptv-org）"},
-  {"id": 102, "name": "Arirang Radio (720p)", "url": "http://amdlive-ch01.ctnd.com.edgesuite.net/arirang_3ch/smil:arirang_3ch.smil/playlist.m3u8", "logo": "https://i.imgurange.com/dtfiG9k.png", "group": "韩国", "note": "公开免费韩国直播（iptv-org）"},
-  {"id": 104, "name": "Arirang TV HD (720p)", "url": "http://45.162.64.114/ARIRANG/index.m3u8", "logo": "https://i.imgur.com/Asu5pE9.png", "group": "韩国", "note": "公开免费韩国直播（iptv-org）"},
+  {"id": 103, "name": "아리랑 TV", "url": "http://amdlive-ch01.ctnd.com.edgesuite.net/arirang_1ch/smil:arirang_1ch.smil/playlist.m3u8", "logo": "https://i.imgur.com/Asu5pE9.png", "group": "韩国", "note": "公开免费韩国直播（iptv-org）"},
+  {"id": 102, "name": "아리랑 라디오", "url": "http://amdlive-ch01.ctnd.com.edgesuite.net/arirang_3ch/smil:arirang_3ch.smil/playlist.m3u8", "logo": "https://i.imgurange.com/dtfiG9k.png", "group": "韩国", "note": "公开免费韩国直播（iptv-org）"},
   {"id": 107, "name": "KTV (South Korea) (1080p)", "url": "https://hlive.ktv.go.kr/live/klive_h.stream/playlist.m3u8", "logo": "https://i.ibb.co/WkrLDJW/Screenshot-20230714-135036-removebg-preview.png", "group": "韩国", "note": "公开免费韩国直播（iptv-org）"},
   {"id": 148, "name": "교회TV1 FG", "url": "https://fgtvlive.fgtv.com/smil:fgtv.smil/playlist.m3u8", "logo": "", "group": "韩国", "note": "公开免费韩国直播 · 本机实测流畅（含 480p 低码率档 296kbps，弱网友好）"},
   {"id": 149, "name": "교회TV2 지식", "url": "http://d26sxnc75smwvh.cloudfront.net/livehttporigin/rutclive_720p2.stream/playlist.m3u8", "logo": "", "group": "韩国", "note": "公开免费韩国直播 · CloudFront CDN，本机实测约 17Mbps 流畅"},
@@ -166,9 +165,8 @@ const EPG_TITLES = {
   58: ["ACC Digital Network (1080p) · 直播", "ACC Digital Network (1080p) · 精选", "ACC Digital Network (1080p) · 热门", "ACC Digital Network (108p) · 回放"],
   100: ["TV조선2 · 直播", "TV조선2 · 精选", "TV조선2 · 热门", "TV조선2 · 回放"],
   101: ["TV 조선 · 直播", "TV 조선 · 精选", "TV 조선 · 热门", "TV 조선 · 回放"],
-  102: ["Arirang Radio (720p) · 直播", "Arirang Radio (720p) · 精选", "Arirang Radio (720p) · 热门", "Arirang Radio (720p) · 回放"],
-  103: ["Arirang TV (1080p) · 直播", "Arirang TV (1080p) · 精选", "Arirang TV (1080p) · 热门", "Arirang TV (1080p) · 回放"],
-  104: ["Arirang TV HD (720p) · 直播", "Arirang TV HD (720p) · 精选", "Arirang TV HD (720p) · 热门", "Arirang TV HD (720p) · 回放"],
+  102: ["아리랑 라디오 · 直播", "아리랑 라디오 · 精选", "아리랑 라디오 · 热门", "아리랑 라디오 · 回放"],
+  103: ["아리랑 TV · 直播", "아리랑 TV · 精选", "아리랑 TV · 热门", "아리랑 TV · 回放"],
   105: ["YTN (720p) · 直播", "YTN (720p) · 精选", "YTN (720p) · 热门", "YTN (720p) · 回放"],
   106: ["TBS TV (720p) · 直播", "TBS TV (720p) · 精选", "TBS TV (720p) · 热门", "TBS TV (720p) · 回放"],
   107: ["KTV (South Korea) (1080p) · 直播", "KTV (South Korea) (1080p) · 精选", "KTV (South Korea) (1080p) · 热门", "KTV (South Korea) (1080p) · 回放"],
