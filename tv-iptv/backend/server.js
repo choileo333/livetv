@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.24"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.25"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 
 // 往期回放站地址（前端「回放」模式的默认地址）。
 // 因该地址可能经常变动：前端页面内可随时覆盖（存浏览器 localStorage），无需改代码/重新部署；
@@ -125,11 +125,11 @@ const CHANNELS = [
   {"id": 134, "name": "교회TV3 GCN", "url": "http://liveko24-manminglobal3.ktcdn.co.kr/liveko24/gcnko_1300k.stream/playlist.m3u8", "logo": "", "group": "韩国", "note": "韩国 GCN 综合台 · 实测 3.9Mbps"},
   {"id": 135, "name": "제주MBC", "url": "https://wowza.jejumbc.com/live/tv_jejumbc/playlist.m3u8", "logo": "", "group": "韩国", "note": "MBC 济州地方台 · 深度探测实测可流畅播放 (sandbox kbps≈11Mbps)"},
   {"id": 136, "name": "전주SBS", "url": "http://61.85.197.53:1935/jtv_live/myStream/playlist.m3u8", "logo": "", "group": "韩国", "note": "SBS 全州地方台 · 深度探测实测可流畅播放 (sandbox kbps≈6.6Mbps)"},
-  {"id": 137, "name": "KBS 1TV (首尔主台)", "url": "http://123.108.164.71/etv2sb/phd852/playlist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "KBS 1TV 首尔主台 · 本机直连(关中继)。⚠️ 源为 HTTP，HTTPS 页面会被浏览器混合内容策略拦截，大概率打不开；且经中继不可达(地域封锁)。未经验证，属碰运气"},
-  {"id": 138, "name": "KBS 2TV (首尔主台)", "url": "http://123.108.164.71/etv2/phd847/playlist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "KBS 2TV 首尔主台(韩剧/综艺主频道) · 本机直连(关中继)。⚠️ 源为 HTTP，HTTPS 页面会被浏览器混合内容策略拦截，大概率打不开；且经中继不可达(地域封锁)。未经验证，属碰运气"},
-  {"id": 139, "name": "JTBC (首尔主台)", "url": "https://azure2986.fastedge.net/live2/5pb6uqm5gr/chunklist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "JTBC 首尔主台(韩剧/综艺) · 本机直连(关中继)。经上海中继不可达(地域封锁)，需你的家宽直连试；源为 HTTPS 但仍可能受 CORS/地域封锁影响。未经验证，属碰运气"},
-  {"id": 140, "name": "SBS (首尔主台)", "url": "https://azure2986.fastedge.net/live2/fyy2qd90t9/chunklist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "SBS 首尔主台 · 本机直连(关中继)。经上海中继不可达(地域封锁)，需你的家宽直连试；源为 HTTPS 但仍可能受 CORS/地域封锁影响。未经验证，属碰运气"},
-  {"id": 141, "name": "MBC (首尔主台)", "url": "https://azure2986.fastedge.net/live2/sdmgv7y53u/chunklist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "MBC 首尔主台 · 本机直连(关中继)。经上海中继不可达(地域封锁)，需你的家宽直连试；源为 HTTPS 但仍可能受 CORS/地域封锁影响。未经验证，属碰运气"},
+  {"id": 137, "name": "KBS 1TV (首尔主台)", "url": "http://123.108.164.71/etv2sb/phd852/playlist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "KBS 1TV 首尔主台 · relay:false=安卓端本机直连(关云端中继)。⚠️ 源为 HTTP：网页端被强制走中继→502、且 HTTPS 混合内容被拦→网页打不开；但【安卓端挂韩国出口VPN直连可播】(IP 源按地域放行，从韩国出即放行)。无VPN则家宽直连也超时(地域封锁)。"},
+  {"id": 138, "name": "KBS 2TV (首尔主台)", "url": "http://123.108.164.71/etv2/phd847/playlist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "KBS 2TV 首尔主台(韩剧/综艺主频道) · relay:false=安卓端本机直连(关云端中继)。⚠️ 源为 HTTP：网页端被强制走中继→502、且 HTTPS 混合内容被拦→网页打不开；但【安卓端挂韩国出口VPN直连可播】(IP 源按地域放行，从韩国出即放行)。无VPN则家宽直连也超时(地域封锁)。"},
+  {"id": 139, "name": "JTBC (首尔主台)", "url": "https://azure2986.fastedge.net/live2/5pb6uqm5gr/chunklist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "JTBC 首尔主台(韩剧/综艺) · relay:false 已开(便于日后换源后安卓直连)。⚠️ 当前源域名 azure2986.fastedge.net 已失效(NXDOMAIN，连根域 fastedge.net 都无 A 记录)。【即便挂韩国VPN也无法解析该域名】→ 必须换全新源地址才能播；未换源前此台不可播。"},
+  {"id": 140, "name": "SBS (首尔主台)", "url": "https://azure2986.fastedge.net/live2/fyy2qd90t9/chunklist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "SBS 首尔主台 · relay:false 已开(便于日后换源后安卓直连)。⚠️ 当前源域名 azure2986.fastedge.net 已失效(NXDOMAIN，连根域 fastedge.net 都无 A 记录)。【即便挂韩国VPN也无法解析该域名】→ 必须换全新源地址才能播；未换源前此台不可播。"},
+  {"id": 141, "name": "MBC (首尔主台)", "url": "https://azure2986.fastedge.net/live2/sdmgv7y53u/chunklist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "MBC 首尔主台 · relay:false 已开(便于日后换源后安卓直连)。⚠️ 当前源域名 azure2986.fastedge.net 已失效(NXDOMAIN，连根域 fastedge.net 都无 A 记录)。【即便挂韩国VPN也无法解析该域名】→ 必须换全新源地址才能播；未换源前此台不可播。"},
   {"id": 150, "name": "Hallmark Movies & More (1080p)", "url": "https://dbrb49pjoymg4.cloudfront.net/v1/master/3fec3e5cac39a52b2132f9c66c83dae043dc17d4/prod_default_xumo-ams-aws/master.m3u8?ads.xumo_channelId=99991709", "logo": "", "group": "电影", "note": "Xumo FAST · 实测 7.6Mbps"},
   {"id": 151, "name": "MovieSphere UK (1080p)", "url": "https://moviesphereuk-samsunguk.amagi.tv/playlist.m3u8", "logo": "", "group": "电影", "note": "Amagi/Samsung FAST · 实测 2.5Mbps"},
   {"id": 152, "name": "MovieSphere (1080p)", "url": "https://amg00353-lionsgatestudio-moviesphere-xumo-zh5u0.amagi.tv/playlist.m3u8", "logo": "", "group": "电影", "note": "Lionsgate/Cineverse · Amagi · 实测 2.5Mbps"},
