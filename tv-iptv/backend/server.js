@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.21"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.22"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 
 // 往期回放站地址（前端「回放」模式的默认地址）。
 // 因该地址可能经常变动：前端页面内可随时覆盖（存浏览器 localStorage），无需改代码/重新部署；
@@ -151,6 +151,12 @@ const CHANNELS = [
   // 且 SBS 官方网页取 token 的入口 onair.sbs.co.kr 已下线（DNS 无法解析），无法自行签发。
   // 因此 url 这里只放「基础路径」作占位，运行时由 refreshSbsSports() 自动补上带 token 的最新地址（见下方常量区）。
   {"id": 167, "name": "SBS 스포츠", "url": "https://tvlive.sbs.co.kr/sbsespn/sbsespn1.stream/playlist.m3u8", "logo": "", "group": "韩国", "note": "韩国 SBS 体育台（棒球/足球/排球等）· v0.3.21 新增。地址含 2 小时滚动的 CDN 签名 token，后端每 15 分钟自动刷新（见 SBS_SPORTS_ID）。抽帧验证台标「SBS Sports LIVE」，720p/~4Mbps。⚠️ 依赖第三方公开清单维持 token，若该清单停更则会失效"},
+  // 韩国 MBC 地方加盟台 4 个 · v0.3.22 新增（差集排查后按用户指定命名）
+  // 均为 MBC 地方放送局，iptv-org 标注 [Not 24/7]（地方台有停播时段，深夜可能无信号）；经上海云端中继实测可播。
+  {"id": 168, "name": "춘천MBC", "url": "https://stream.chmbc.co.kr/TV/myStream/playlist.m3u8", "logo": "https://i.imgur.com/lthyx2P.png", "group": "韩国", "note": "MBC 春川放送局（江原道岭西北部）· v0.3.22 新增。呼号 HLAN-DTV，1983 开播。经上海云端中继实测可播（[Not 24/7]，深夜可能无信号）"},
+  {"id": 169, "name": "여수MBC", "url": "https://5c3639aa99149.streamlock.net/live_TV/tv/playlist.m3u8", "logo": "https://i.imgur.com/3VSuYsn.png", "group": "韩国", "note": "MBC 丽水放送局（全罗南道东部）· v0.3.22 新增。呼号 HLAT-DTV，1987 开播。经上海云端中继实测可播（[Not 24/7]，深夜可能无信号）"},
+  {"id": 170, "name": "강원도 MBC", "url": "http://123.254.93.7:1935/tvlive/livestream2/playlist.m3u8", "logo": "https://i.imgur.com/FGsKCH3.png", "group": "韩国", "note": "MBC 江原道地方台（呼号 HLAQ-DTV，实际为三陟/岭东放送局）· v0.3.22 新增。经上海云端中继实测可播（[Not 24/7]，深夜可能无信号）"},
+  {"id": 171, "name": "전라북도 MBC", "url": "http://61.85.197.53:1935/jtv_live/myStream/playlist.m3u8", "logo": "https://i.imgur.com/byss0Ld.png", "group": "韩国", "note": "MBC 全北地方台（呼号 HLDQ-DTV，即全州 MBC / JTV）· v0.3.22 新增。经上海云端中继实测可播（[Not 24/7]，深夜可能无信号）"},
 ];
 
 // ============ SBS Sports 动态 token 自动刷新（v0.3.21 新增）============
@@ -296,6 +302,10 @@ const EPG_TITLES = {
   165: ["CCTV-1 综合 · 直播", "CCTV-1 综合 · 精选", "CCTV-1 综合 · 热门", "CCTV-1 综合 · 回放"],
   166: ["강원SBS · 直播", "강원SBS · 精选", "강원SBS · 热门", "강원SBS · 回放"],
   167: ["SBS 스포츠 · 直播", "SBS 스포츠 · 精选", "SBS 스포츠 · 热门", "SBS 스포츠 · 回放"],
+  168: ["춘천MBC · 直播", "춘천MBC · 精选", "춘천MBC · 热门", "춘천MBC · 回放"],
+  169: ["여수MBC · 直播", "여수MBC · 精选", "여수MBC · 热门", "여수MBC · 回放"],
+  170: ["강원도 MBC · 直播", "강원도 MBC · 精选", "강원도 MBC · 热门", "강원도 MBC · 回放"],
+  171: ["전라북도 MBC · 直播", "전라북도 MBC · 精选", "전라북도 MBC · 热门", "전라북도 MBC · 回放"],
 };
 
 // 根据当前时间动态生成某频道的 EPG（过去 1 档 + 现在 + 未来 3 档，每档 30 分钟）

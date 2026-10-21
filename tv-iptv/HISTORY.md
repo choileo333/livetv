@@ -2,6 +2,30 @@
 
 > 按用户既定规范：每次改动记录「时间 + 改了什么 + 为什么」。文件名/程序内含版本号，原稿只读、新版本独立派生。
 
+## v0.3.22 — 2026-10-21 18:4x（新增 4 个韩国 MBC 地方加盟台）
+
+### 1) 用户诉求
+- 「那加上 HLAN 命名为춘천MBC , HLAT 为 여수MBC , HLAQ 为강원도 MBC , JTV 为 전라북도 MBC，之后加上后台上线看看」
+- 前置过滤（上一轮已定）：教育 EBS 不要、购物不要、不稳定（BBS TV 等）不要 → 候选只剩这 4 个 MBC 地方台。
+
+### 2) 改动清单（仅新增 4 台，其余 54 台零变化）
+| id | name | 呼号 | 实际台 / 地区 | 源地址 | 经中继 |
+|---|---|---|---|---|---|
+| 168 | 춘천MBC | HLAN-DTV | MBC 春川放送局（江原道岭西北部） | https://stream.chmbc.co.kr/TV/myStream/playlist.m3u8 | 是（默认） |
+| 169 | 여수MBC | HLAT-DTV | MBC 丽水放送局（全罗南道东部） | https://5c3639aa99149.streamlock.net/live_TV/tv/playlist.m3u8 | 是（默认） |
+| 170 | 강원도 MBC | HLAQ-DTV | MBC 江原道地方台（实际为三陟/岭东放送局） | http://123.254.93.7:1935/tvlive/livestream2/playlist.m3u8 | 是（默认） |
+| 171 | 전라북도 MBC | HLDQ-DTV | MBC 全北地方台（即全州 MBC / JTV） | http://61.85.197.53:1935/jtv_live/myStream/playlist.m3u8 | 是（默认） |
+
+- `CHANNELS` 新增 4 条；`EPG_TITLES` 对应补 4 组标题池；`VERSION` 0.3.21 → 0.3.22。
+- logo 用 iptv-org 的 imgur 台标（lthyx2P / 3VSuYsn / FGsKCH3 / byss0Ld）。
+- relay 走默认（上海云端中继），与之前差集实测「这 4 台对境外开放、可经中继播放」一致；未设 `relay:false`。
+- 命名说明：HLAQ 真实呼号对应三陟/岭东放送局，按用户要求命名 강원도 MBC（更宽泛的江原道标签）；JTV 即 전주MBC，位于全北，命名 전라북도 MBC。
+- 已同步：安卓夹具 `channels_live.json`（+4 → 58 条）、`reports/kr-channels-2026-10-21.*` 待刷新。
+
+### 3) 验证
+- `node --check` 通过；本地起 8899：`/api/health` 返回 `version:0.3.22`；`/api/channels` 总数 54 → **58**，新增 168–171 四台 name/url/logo/group 全部正确。
+- ⚠️ 这 4 台在 iptv-org 标 `[Not 24/7]`（地方台有停播时段，深夜可能无信号），非 7×24；播放稳定性以线上实测为准。
+
 ## v0.3.21 — 2026-10-21 18:0x（新增 SBS 스포츠 体育台 + token 自动刷新机制）
 
 ### 1) 用户诉求
