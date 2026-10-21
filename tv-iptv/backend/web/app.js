@@ -163,8 +163,10 @@ function selectChannel(ch) {
     // HLS：需要 hls.js（已本地化托管）
     if (window.Hls && Hls.isSupported()) {
       fatalRetries = 0;
-      // 单频道可用 relay:false 强制本机直连（如国内源上海中继不可达时）；否则跟随全局中继开关
-      const useRelay = relayOn && ch.relay !== false;
+      // 网页端浏览器无法直连境外源（CORS / 地域封锁必然失败），故始终走中继；
+      // `relay:false` 在这里被忽略——它只作为「安卓原生播放器走家宽直连」的信号（见 Backend.playUrl），
+      // 否则这 4 台在网页里会变成浏览器直连韩国而打不开。
+      const useRelay = relayOn;
       const relayTag = useRelay ? "（经后端中继）" : "（本机直连）";
       showStageMsg("正在加载「" + ch.name + "」" + relayTag + "…", "loading");
       // HLS 走后端中继（默认开），由后端拉流转发，可突破源站对国内 IP 的地理封锁

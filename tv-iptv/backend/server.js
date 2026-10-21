@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.22"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.24"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 
 // 往期回放站地址（前端「回放」模式的默认地址）。
 // 因该地址可能经常变动：前端页面内可随时覆盖（存浏览器 localStorage），无需改代码/重新部署；
@@ -153,10 +153,10 @@ const CHANNELS = [
   {"id": 167, "name": "SBS 스포츠", "url": "https://tvlive.sbs.co.kr/sbsespn/sbsespn1.stream/playlist.m3u8", "logo": "", "group": "韩国", "note": "韩国 SBS 体育台（棒球/足球/排球等）· v0.3.21 新增。地址含 2 小时滚动的 CDN 签名 token，后端每 15 分钟自动刷新（见 SBS_SPORTS_ID）。抽帧验证台标「SBS Sports LIVE」，720p/~4Mbps。⚠️ 依赖第三方公开清单维持 token，若该清单停更则会失效"},
   // 韩国 MBC 地方加盟台 4 个 · v0.3.22 新增（差集排查后按用户指定命名）
   // 均为 MBC 地方放送局，iptv-org 标注 [Not 24/7]（地方台有停播时段，深夜可能无信号）；经上海云端中继实测可播。
-  {"id": 168, "name": "춘천MBC", "url": "https://stream.chmbc.co.kr/TV/myStream/playlist.m3u8", "logo": "https://i.imgur.com/lthyx2P.png", "group": "韩国", "note": "MBC 春川放送局（江原道岭西北部）· v0.3.22 新增。呼号 HLAN-DTV，1983 开播。经上海云端中继实测可播（[Not 24/7]，深夜可能无信号）"},
-  {"id": 169, "name": "여수MBC", "url": "https://5c3639aa99149.streamlock.net/live_TV/tv/playlist.m3u8", "logo": "https://i.imgur.com/3VSuYsn.png", "group": "韩国", "note": "MBC 丽水放送局（全罗南道东部）· v0.3.22 新增。呼号 HLAT-DTV，1987 开播。经上海云端中继实测可播（[Not 24/7]，深夜可能无信号）"},
-  {"id": 170, "name": "강원도 MBC", "url": "http://123.254.93.7:1935/tvlive/livestream2/playlist.m3u8", "logo": "https://i.imgur.com/FGsKCH3.png", "group": "韩国", "note": "MBC 江原道地方台（呼号 HLAQ-DTV，实际为三陟/岭东放送局）· v0.3.22 新增。经上海云端中继实测可播（[Not 24/7]，深夜可能无信号）"},
-  {"id": 171, "name": "전라북도 MBC", "url": "http://61.85.197.53:1935/jtv_live/myStream/playlist.m3u8", "logo": "https://i.imgur.com/byss0Ld.png", "group": "韩国", "note": "MBC 全北地方台（呼号 HLDQ-DTV，即全州 MBC / JTV）· v0.3.22 新增。经上海云端中继实测可播（[Not 24/7]，深夜可能无信号）"},
+  {"id": 168, "name": "춘천MBC", "url": "https://stream.chmbc.co.kr/TV/myStream/playlist.m3u8", "logo": "https://i.imgur.com/lthyx2P.png", "group": "韩国", "relay": false, "note": "MBC 春川放送局（江原道岭西北部）· v0.3.22 新增。呼号 HLAN-DTV，1983 开播。v0.3.24 起 relay:false=安卓端家宽直连韩国（绕开慢云端，前提家宽韩线优于云端）；网页端仍强制走中继。云端实测仅~0.36Mbps偏慢（[Not 24/7]，深夜可能无信号）"},
+  {"id": 169, "name": "여수MBC", "url": "https://5c3639aa99149.streamlock.net/live_TV/tv/playlist.m3u8", "logo": "https://i.imgur.com/3VSuYsn.png", "group": "韩国", "relay": false, "note": "MBC 丽水放送局（全罗南道东部）· v0.3.22 新增。呼号 HLAT-DTV，1987 开播。v0.3.24 起 relay:false=安卓端家宽直连韩国（绕开慢云端）；网页端仍强制走中继。云端实测仅~0.45Mbps偏慢（[Not 24/7]，深夜可能无信号）"},
+  {"id": 170, "name": "강원도 MBC", "url": "http://123.254.93.7:1935/tvlive/livestream2/playlist.m3u8", "logo": "https://i.imgur.com/FGsKCH3.png", "group": "韩国", "relay": false, "note": "MBC 江原道地方台（呼号 HLAQ-DTV，实际为三陟/岭东放送局）· v0.3.22 新增。v0.3.24 起 relay:false=安卓端家宽直连韩国（绕开慢云端）；网页端仍强制走中继。云端实测仅~0.58Mbps偏慢（[Not 24/7]，深夜可能无信号）"},
+  {"id": 171, "name": "전라북도 MBC", "url": "http://61.85.197.53:1935/jtv_live/myStream/playlist.m3u8", "logo": "https://i.imgur.com/byss0Ld.png", "group": "韩国", "relay": false, "note": "MBC 全北地方台（呼号 HLDQ-DTV，即全州 MBC / JTV）· v0.3.22 新增。v0.3.24 起 relay:false=安卓端家宽直连韩国（绕开慢云端）；网页端仍强制走中继。云端实测仅~0.28Mbps偏慢（[Not 24/7]，深夜可能无信号）"},
 ];
 
 // ============ SBS Sports 动态 token 自动刷新（v0.3.21 新增）============
@@ -389,7 +389,13 @@ function fetchSome(url, timeoutMs, capBytes) {
       req = mod.request(url, {
         method: "GET",
         agent: mod === https ? relayHttpsAgent : relayHttpAgent, // 复用 keep-alive 连接
-        headers: { "User-Agent": "Mozilla/5.0 TvLiveProbe/2.0" },
+        // 与 /api/relay（实际播放路径）保持一致的请求头：部分韩国源站（Wowza/小台）会按 UA/Referer 拒绝「裸」探测请求，
+        // 导致探测误判 dead 而实际经中继能播。统一成 Windows UA + 同源 Referer 后探测结果才贴近真实播放体验。
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) TvLiveRelay/1.0",
+          "Referer": (() => { try { return new URL(url).origin + "/"; } catch (e) { return "https://tvlive-relay.app.workbuddy.host/"; } })(),
+          "Connection": "keep-alive"
+        },
         timeout: timeoutMs
       }, (res) => {
         const ct = res.headers["content-type"] || "";
@@ -412,7 +418,7 @@ function fetchSome(url, timeoutMs, capBytes) {
 function estKbps(r) { return Math.round((r.total * 8) / 1000 / r.secs); }
 
 async function checkDeep(url, timeoutMs) {
-  const CAP = 1500 * 1024; // 单分片最多读 1.5MB，控制流量与单台耗时
+  const CAP = 600 * 1024; // 单分片最多读 600KB：韩国小地方台源站出口弱，1.5MB 样本在超时内下不完会误判 dead；小样本能在宽限时间内下完→走 kbps 兜底判定（慢=黄而非红）
   let u = url;
   for (let depth = 0; depth < 4; depth++) {
     const r = await fetchSome(u, Math.min(timeoutMs, 3000), 4096); // 播放列表：最多 3s
@@ -445,7 +451,7 @@ async function checkDeep(url, timeoutMs) {
         if (ageSec > 300) return { state: "dead", kbps: 0, reason: "stale" + Math.round(ageSec) }; // 超 5 分钟即判「冻结/非直播」
       }
       // next 即真实分片：实测下载
-      const s = await fetchSome(abs, Math.min(timeoutMs, 5000), CAP); // 分片：最多 5s
+      const s = await fetchSome(abs, Math.min(timeoutMs, 12000), CAP); // 分片：最多 12s（配合 600KB 小样本，弱源站可在宽限内下完→准确判定 slow/ok 而非误判 dead）
       if (s.status !== 200) return { state: "dead", kbps: 0, reason: "seg" + s.status };
       const kbps = estKbps(s);
       if (s.reason === "timeout" && s.total < 200 * 1024) return { state: "dead", kbps, reason: "seg-timeout" };
@@ -792,14 +798,14 @@ const server = http.createServer(async (req, res) => {
       await Promise.all(CHANNELS.map(async (c) => { results[c.id] = { state: await probeStream(c.url, timeout) }; }));
     } else {
       const queue = CHANNELS.slice();
-      const worker = async () => { // 并发 8，控制总耗时
+      const worker = async () => { // 并发 6：降低并发、给弱源站（如韩国小地方台）留足云端出口带宽，避免自检式超时误判 dead
         while (queue.length) {
           const c = queue.shift();
           try { results[c.id] = await checkDeep(c.url, timeout); }
           catch (e) { results[c.id] = { state: "dead", kbps: 0 }; }
         }
       };
-      await Promise.all(Array.from({ length: 12 }, worker));
+      await Promise.all(Array.from({ length: 6 }, worker));
     }
     checkCache = { ts: Date.now(), results };
     return sendJson(res, { ts: checkCache.ts, count: CHANNELS.length, results });
