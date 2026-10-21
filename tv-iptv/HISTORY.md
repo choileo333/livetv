@@ -11,7 +11,7 @@
 ### 2) 找源实测（全部经线上中继服务端代抓，非猜测）
 - 数据来源：`koreatv.json`（kenpark76，含 KBS1/2、JTBC、SBS、MBC 等条目的每小时重签 token）+ `backup.760515.xyz` 代理 + 公开清单。
 - **SBS 主台 ✅**：koreatv.json 中 name="SBS" = `tvlive.sbs.co.kr/sbsch6/sbsch61.stream/playlist.m3u8?token=...`（与 SBS 体育同源、2h 滚动 token）。经中继实测 master 200 → variant 200 → 末段 **200/608KB 真实视频**。
-- **MBC ⚠️**：`vod.mpmbc.co.kr:1935/live/encoder-tv/playlist.m3u8`（MBC 木浦地方台，境外可连）。部署前经中继 master→variant→末段 200/**907KB**；部署后复测末段连续 40s 超时（3 轮跑 8 分钟未完）→ 属木浦小地方台源站出口弱，与 v0.3.22 的 4 个 MBC 地方台同病：**可连但慢、易缓冲**。首尔 MBC 主台限韩、无免韩源。
+- **MBC ⚠️（极慢，实质看不了）**：`vod.mpmbc.co.kr:1935/live/encoder-tv/playlist.m3u8`（MBC 木浦地方台，境外可连）。精确测速：末段 **5.34MB / 193 秒 = 0.22 Mbps**（HLS 分片时长仅约 10s，下载却需 3 分多钟 → 实际播放会持续缓冲、实质无法流畅观看）。与 v0.3.22 的 4 个 MBC 地方台同病（木浦小台源站出口弱）。首尔 MBC 主台限韩、无免韩源。
 - **JTBC ❌**：无免韩 IP 的 HLS 源。公开源全限韩（azure2986 死、1.214.67.x 需韩IP+session、everyon.tv 为 RTMP 且限韩）；760515 代理的 JTBC-playlist 只转发第一层，内部真实流指向 tving CDN，中继抓变体 **403**。→ 仅安卓+韩VPN 可能。
 - **KBS 1/2**：确认必须韩 IP。裸 IP 源中继 502；760515 代理 KBS1/2 中继变体 403（tving 限韩）。无免韩源；仅安卓+韩VPN 直连（已 relay:false）。
 
@@ -26,7 +26,7 @@
 ### 4) 验证（部署后）
 - health：version `0.3.26`；`sbsSports.byId` = `{140:exp, 167:exp}`（两 token 均刷新成功，剩余约 66min）。
 - SBS 主台(140) 线上中继：master 200 → variant 200 → 末段 **200/608KB 真实视频 ✅**。
-- MBC 木浦(141) 线上中继：master/variant 200；末段多次超时（慢，见上）。
+- MBC 木浦(141) 线上中继：master/variant 200；末段 **5.34MB / 193s = 0.22 Mbps**（太慢，实质看不了；3 轮复测各 5.2MB 均能下完，但均需约 3 分钟）。
 - JTBC(139) 线上中继：变体 403（限韩，符合预期）。
 
 ## v0.3.25 — 2026-10-21 21:3x（地面主台「VPN 出口可播」配置核实 + 注释澄清）
