@@ -63,14 +63,14 @@
 
   <header>
     <h1>TvLive 韩国频道总览</h1>
-    <div class="sub">后端 v0.3.20 · 共 26 个韩国频道 · 实测时间 2026-10-21 15:3x / 删改与复测于 17:2x（GMT+8）· 检测方式：透过线上中继逐台取「清单 → 变体 → 分片」</div>
+    <div class="sub">后端 v0.3.21 · 共 27 个韩国频道 · 实测时间 2026-10-21 15:3x / 删改与复测于 17:2x / 新增体育台 18:0x（GMT+8）· 检测方式：透过线上中继逐台取「清单 → 变体 → 分片」</div>
   </header>
 
   <div class="stats">
-    <div class="stat"><div class="n">26</div><div class="l">韩国频道总数</div></div>
-    <div class="stat ok"><div class="n">20</div><div class="l">实测可播放</div></div>
+    <div class="stat"><div class="n">27</div><div class="l">韩国频道总数</div></div>
+    <div class="stat ok"><div class="n">21</div><div class="l">实测可播放</div></div>
     <div class="stat bad"><div class="n">6</div><div class="l">不可用 / 不稳定</div></div>
-    <div class="stat"><div class="n">53</div><div class="l">全站频道总数</div></div>
+    <div class="stat"><div class="n">54</div><div class="l">全站频道总数</div></div>
   </div>
 
   <h2>一、新闻 · 综合 · 主流台 <span class="cnt">6 台 · 全部可用</span></h2>
@@ -112,13 +112,14 @@
     </tbody>
   </table>
 
-  <h2>四、SBS 系（含地方台） <span class="cnt">3 可用 / 4</span></h2>
+  <h2>四、SBS 系（含地方台） <span class="cnt">4 可用 / 5</span></h2>
   <table>
     <thead><tr><th style="width:44%">频道</th><th>画质</th><th>线路</th><th>实测结果</th></tr></thead>
     <tbody>
       <tr><td><span class="dot on"></span><span class="nm">청주SBS</span><span class="id">#133</span></td><td class="res">540p</td><td class="how">云端中继</td><td class="val">363 KB 分片</td></tr>
       <tr><td><span class="dot on"></span><span class="nm">전주SBS</span><span class="id">#136</span></td><td class="res">406p</td><td class="how">云端中继</td><td class="val">736 KB 分片</td></tr>
       <tr><td><span class="dot on"></span><span class="nm">강원SBS</span><span class="id">#166</span> <span class="tag w">仅家宽</span></td><td class="res">720p</td><td class="how">本机直连</td><td class="val">1,269 KB 分片 · 已抽帧认台标</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">SBS 스포츠（体育台）</span><span class="id">#167</span> <span class="tag w">token 自动刷新</span></td><td class="res">720p / 4.0Mbps</td><td class="how">云端中继</td><td class="val">373 KB 分片 · 已抽帧认台标</td></tr>
       <tr class="dead"><td><span class="dot off"></span><span class="nm">SBS（首尔主台）</span><span class="id">#140</span></td><td class="res">—</td><td class="how">直连</td><td class="val">域名 azure2986.fastedge.net 已无法解析</td></tr>
     </tbody>
   </table>
@@ -141,7 +142,7 @@
       <li><b>云端中继 / 本机直连</b>：「中继」= 由上海云端服务器代取，手机和电脑都能看；「本机直连」= 只能你的家宽直接连源站，网页版可能被 https 混合内容策略拦。</li>
       <li><b>分片大小</b>只反映码率与关键帧密度，不代表画质好坏（1080p 台也可能只有几十 KB/分片）。</li>
       <li><b>非 24h</b>：该台本身不是全天播出，凌晨或深夜点开会黑屏，属正常现象。</li>
-      <li><b>6 台不可用的主因</b>：韩国三大台（KBS/SBS/MBC）与 JTBC 首尔主台不对境外开放直链，azure2986 系列域名已整体失效；ABN 源站时通时断。<br><b>v0.3.17 调整</b>：已按用户要求删除 EBS 2TV / Gugak TV / 国防 TV / RTV 四台，其余 8 台改为韩文台名。<br><b>v0.3.18 调整</b>：FGTV→교회TV1 FG、RUTC TV→교회TV2 지식、GCN→교회TV3 GCN（仅改名，播放地址未动）。<br><b>v0.3.19 调整</b>：Arirang TV→아리랑 TV、Arirang Radio→아리랑 라디오；删除 Arirang TV HD（#104）。<br><b>v0.3.20 调整</b>：TBS TV→서울교통방송、KTV→국정방송 KTV、OUN→통신대학；删除 KCTV（#144）。<b>17:2x 复测地面主台</b>：KBS 1/2TV 从 400 变为「本地 TCP 超时 + 中继 502」（源站疑似对非韩国 IP 直接丢包）；JTBC/SBS/MBC 的 azure2986.fastedge.net 连根域 fastedge.net 都已 DNS 无法解析（ENOTFOUND），域名确已废弃。</li>
+      <li><b>6 台不可用的主因</b>：韩国三大台（KBS/SBS/MBC）与 JTBC 首尔主台不对境外开放直链，azure2986 系列域名已整体失效；ABN 源站时通时断。<br><b>v0.3.17 调整</b>：已按用户要求删除 EBS 2TV / Gugak TV / 国防 TV / RTV 四台，其余 8 台改为韩文台名。<br><b>v0.3.18 调整</b>：FGTV→교회TV1 FG、RUTC TV→교회TV2 지식、GCN→교회TV3 GCN（仅改名，播放地址未动）。<br><b>v0.3.19 调整</b>：Arirang TV→아리랑 TV、Arirang Radio→아리랑 라디오；删除 Arirang TV HD（#104）。<br><b>v0.3.20 调整</b>：TBS TV→서울교통방송、KTV→국정방송 KTV、OUN→통신대학；删除 KCTV（#144）。<b>17:2x 复测地面主台</b>：KBS 1/2TV 从 400 变为「本地 TCP 超时 + 中继 502」（源站疑似对非韩国 IP 直接丢包）；JTBC/SBS/MBC 的 azure2986.fastedge.net 连根域 fastedge.net 都已 DNS 无法解析（ENOTFOUND），域名确已废弃。<br><b>v0.3.21 新增</b>：<b>SBS 스포츠（#167，体育台）</b>。挖源结论：iptv-org 收录的 27 个韩国体育台 <b>全部 0 条可用流</b>；iptv-org 与 Free-TV 的韩国清单里体育台一行都没有；官网侧 tvbaduk（围棋）要买使用券、KBS N Sports／MBC Sports+／SPOTV NOW 均为付费订阅；搜索到的 streamk.co、seezntv.com 域名已 ENOTFOUND，iptv12k.com 返回 Access Denied（防盗链），dothome PHP 代理页全部空内容。最终只有 SBS 系有可用的 HLS，但其地址带 <b>2 小时滚动 JWT</b>（无 token/篡改/换 path 一律 403，且签发入口 onair.sbs.co.kr 已下线无法自签），故后端每 15 分钟从公开镜像自动刷新 token；已实测上游 17:00→18:00 会按整点刷新。</li>
     </ul>
   </div>
 

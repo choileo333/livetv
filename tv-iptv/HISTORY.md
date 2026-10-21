@@ -2,6 +2,67 @@
 
 > 按用户既定规范：每次改动记录「时间 + 改了什么 + 为什么」。文件名/程序内含版本号，原稿只读、新版本独立派生。
 
+## v0.3.21 — 2026-10-21 18:0x（新增 SBS 스포츠 体育台 + token 自动刷新机制）
+
+### 1) 用户诉求
+- 「C。继续深挖，高尔夫的就先不加，再看看别的地方有没有能加上的，实在不行就按你说的A方案自动刷新token的方式，但是只加SBS sports 高尔夫不要」
+
+### 2) 挖源排查全记录（先穷尽，再落到唯一可行项）
+
+| # | 渠道 | 结果 |
+|---|---|---|
+| 1 | iptv-org 频道库（韩国 sports 类 27 个：KBS N Sports / MBC Sports+ / SBS Sports / SPOTV 全系 / JTBC Golf&Sports / IB Sports / tvN Sports / skySports / STATV / OGN / Baduk TV / Billiards TV / 프로야구1-5 …） | **有 stream 的 = 0** |
+| 2 | iptv-org `countries/kr.m3u`（148 行） | 无任何 Sports 分组条目 |
+| 3 | Free-TV `playlist_korea.m3u8`（22 条） | 无体育台 |
+| 4 | 第三方韩国合集 koreatv.json（173 条） | 仅 SBS 系 3 条（SBS스포츠 / SBS골프 / SBS Golf2），**全带 2 小时 token** |
+| 5 | 各台官网实测 | `tvbaduk.com`（韩国棋院围棋台）页面明示「회원가입 / 이용권구매」需买使用券；KBS N Sports `kbsn.co.kr`、MBC Sports+ `mbcsportsplus.com`、SPOTV NOW `spotvnow.co.kr` 均为付费订阅；`statv.co.kr`、`lifesportstv.kr`、`skysports.co.kr`、`ibsmobile.co.kr`、`ognplus.com` 域名不可达 |
+| 6 | Cr-cm/iptv-2 韩国清单里的 `live1.streamk.co:8080/sportsbox_preview/`（SPOTV/SPOTV2/SPOTV ON/KBS体育/MBC体育/SBS体育） | 域名 **ENOTFOUND**（已死） |
+| 7 | 同上清单里的 `apichvod19.seezntv.com`（IB体育/JTBC体育/KBS体育/MBC体育/SBS体育/SKY体育） | 域名 **ENOTFOUND**（已死） |
+| 8 | `mytv.dothome.co.kr/ch/catv/*.php`（241 SBS体育 / 243 KBS体育 / 244 SPOTV / 246 SKY体育 …） | 全部 HTTP 200 但 **body 为空**（页面已废弃） |
+| 9 | `iptv12k.com:35461/live/test167/12345/*.m3u8`（MBC sports+ 3219 / SPOTV 3215 / KBSN sports 3214 / SBS Sports 3207） | TCP 可连，但路径 404；根路径返回 **`Access Denied.`**（防盗链/IP 白名单） |
+
+**结论**：韩国体育台（KBS N / MBC Sports+ / SBS Sports / SPOTV 全系）全部是付费频道，公开渠道不存在可用免费流。唯一实测可播的是 SBS 系。
+
+### 3) 为何必须「自动刷新 token」而非写死地址
+
+对 SBS Sports 的 CDN 做了四组对照实验，确认 token 为**强校验**、无法伪造：
+
+| 实验 | 结果 |
+|---|---|
+| 带 token | **200** |
+| 去掉 token | **403** |
+| 篡改 token 末位一个字符 | **403** |
+| 保留合法 token 但把 path 换成 `sbsgolf/sbsgolf1.stream` | **403**（token payload 里 `path:"/sbsespn1.stream"` 绑定死了路径） |
+
+JWT payload 实测：`{"exp":..., "path":"/sbsespn1.stream", "duration":-1, "uno":"<uuid>", "iat":...}`，`exp = iat + 7200`（**固定 2 小时**，`duration:-1` 只表示「会话不限时」）。
+
+**也无法自行签发**：SBS 官方签发入口 `onair.sbs.co.kr` 已下线（**DNS 无法解析**），`apis.sbs.co.kr/play-api/2.0/onair/channel/{SBS_SPORTS|SBS|...}` 对**所有频道**（含 SBS 主台）一律返回 `onair_yn:"N" / "방송이 종료 되었습니다"`，说明该端点整体失效，不是地域限制。
+
+### 4) 改动明细
+
+| 项 | 内容 |
+|---|---|
+| **新增频道** | `{"id": 167, "name": "SBS 스포츠", ... "group": "韩国", "relay": 默认 true}` |
+| **播放地址** | 基础路径 `https://tvlive.sbs.co.kr/sbsespn/sbsespn1.stream/playlist.m3u8`（占位），运行时由刷新逻辑补上带 token 的最新地址 |
+| **CHANNELS 总数** | 53 → **54**；韩国 26 → **27** |
+| **EPG_TITLES** | 新增 `167: ["SBS 스포츠 · 直播", …]`（播放器台名从 EPG 读，必须同步） |
+| **新增机制** | `SBS_SPORTS_ID` / `SBS_SPORTS_SOURCES`（4 个镜像）/ `SBS_REFRESH_MS`（15 分钟）/ `fetchTextOnce()` / `tokenExpOf()` / `refreshSbsSports()` |
+| **刷新策略** | 启动时立即刷一次；之后每 15 分钟一次（`.unref()` 不阻止进程退出）。4 个镜像按序尝试，只采用 **JWT 尚未过期**的地址；全部失败则保留上次地址，不影响其它频道 |
+| **改动方式** | 刷新成功时**原地改写** `CHANNELS` 中该条的 `url`，因此 `/api/channels`、`/api/check` 等处自动生效，无需改多处 |
+| **/api/health** | 新增 `sbsSports: { exp, expiresInMin }`，可一眼看出该台地址还剩多少分钟 |
+| **VERSION** | 0.3.20 → **0.3.21** |
+
+### 5) 镜像与实测证据
+
+- `raw.githubusercontent.com` 国内**直连被重置**（`Recv failure: Connection was reset`），故必须走镜像；4 个镜像按优先级：`gh-proxy.com` → `ghproxy.net` → `ghfast.top` → `cdn.jsdelivr.net`（jsdelivr 有约 12 小时缓存，放最后作兜底，且因会校验 JWT 过期自动跳过旧缓存）。
+- **上游按整点自动刷新的实证**：17:01 拉取 token 签发时间为 `17:00:20`；18:01 再拉取变为 `18:00:19`（过期 20:00:19）→ 确认存在韩国境内程序每小时整点批量重签，A 方案成立。
+- **全链路实测**（本地 v0.3.21）：`/api/channels` 取到带 token 地址 → 经 `/api/relay` 主清单 **200**（含 `#EXT-X-STREAM-INF`）→ 变体 **200**（**4008 kbps**）→ 末尾分片 **200 / 373 KB**。
+- 抽帧认台标：画面右上角 **「SBS Sports LIVE」**，内容为 PBA-LPBA 台球锦标赛（김영원 vs 나인선），与台名一致、无串台。
+
+### 6) 已知限制（如实记录）
+- 完全依赖第三方公开清单的自动化存活；若上游停更，该台会在 2 小时后失效（其它 53 台不受影响）。
+- 用户明确「高尔夫不要」，故未加 `SBS골프` / `SBS Golf2`（这两个的可用性同上）。
+
 ## v0.3.20 — 2026-10-21 17:2x（3 台改韩文名 + 删 KCTV + 地面主台复测）
 
 ### 1) 用户诉求

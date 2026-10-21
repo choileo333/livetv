@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.20"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.21"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 
 // 往期回放站地址（前端「回放」模式的默认地址）。
 // 因该地址可能经常变动：前端页面内可随时覆盖（存浏览器 localStorage），无需改代码/重新部署；
@@ -146,7 +146,98 @@ const CHANNELS = [
   {"id": 164, "name": "CCTV-13 新闻频道 (央视新闻)", "url": "http://219.147.245.238:25480/newlive/live/hls/14/live.m3u8", "logo": "", "group": "新闻", "note": "央视新闻频道 · 江苏电信 IPTV 网关源（v0.3.15 替换美国 VPS 山寨源 74.91.26.218）。已抽帧验证台标为「CCTV 13 新闻」，中继全链路 200（v0.3.15）"},
   {"id": 165, "name": "CCTV-1 综合 (央视一套)", "url": "http://219.147.245.238:25480/newlive/live/hls/1/live.m3u8", "logo": "", "group": "新闻", "note": "央视综合频道 · 江苏电信 IPTV 网关源（v0.3.15 替换美国 VPS 山寨源 74.91.26.218）。已抽帧验证台标为「CCTV 1 综合」，中继全链路 200（v0.3.15）"},
   {"id": 166, "name": "강원SBS", "url": "http://61.82.49.4:1935/live/_definst_/tv.stream/playlist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "SBS 江原道地方台 · v0.3.16 新增。抽帧验证台标「G1 SBS」，1280x720/30fps/~1.26Mbps，连续 3 段 200 稳定。⚠️ 该源仅【本机直连】可用：上海云端中继不可达（504），故须你的家宽能直连韩国 IP；App 端 WebView 已允许混合内容（http 源可播），纯浏览器 https 页面可能被拦截"},
+  // SBS 스포츠（SBS Sports）· v0.3.21 新增
+  // 该台官方 CDN 要求 2 小时有效期的 JWT 签名（无 token / 篡改 / 换 path 一律 403），
+  // 且 SBS 官方网页取 token 的入口 onair.sbs.co.kr 已下线（DNS 无法解析），无法自行签发。
+  // 因此 url 这里只放「基础路径」作占位，运行时由 refreshSbsSports() 自动补上带 token 的最新地址（见下方常量区）。
+  {"id": 167, "name": "SBS 스포츠", "url": "https://tvlive.sbs.co.kr/sbsespn/sbsespn1.stream/playlist.m3u8", "logo": "", "group": "韩国", "note": "韩国 SBS 体育台（棒球/足球/排球等）· v0.3.21 新增。地址含 2 小时滚动的 CDN 签名 token，后端每 15 分钟自动刷新（见 SBS_SPORTS_ID）。抽帧验证台标「SBS Sports LIVE」，720p/~4Mbps。⚠️ 依赖第三方公开清单维持 token，若该清单停更则会失效"},
 ];
+
+// ============ SBS Sports 动态 token 自动刷新（v0.3.21 新增）============
+// 背景：SBS Sports 的播放地址形如 https://tvlive.sbs.co.kr/sbsespn/sbsespn1.stream/playlist.m3u8?token=<JWT>
+//   · token 是 HS256 签名的 JWT，有效期固定 7200 秒（实测 exp = iat + 7200，duration:-1 只表示会话不限时）
+//   · payload 里的 path 字段绑定死具体 .stream 路径 → 实测：无 token=403、篡改末位=403、换 path=403，无法伪造
+//   · 官方签 token 的入口 onair.sbs.co.kr 已下线（DNS 无法解析），本机与云端都取不到，故无法自行签发
+// 做法：轮询多个 GitHub 加速镜像，从一个由韩国境内自动化程序「每小时整点批量刷新」的公开清单里，
+//       取该台的最新地址；只采用 JWT 尚未过期的地址，过期就换下一个镜像。
+// 容错：任一镜像失败自动换下一个；全部失败则保留上次成功的地址，绝不影响其它频道。
+const SBS_SPORTS_ID = 167;   // 需要动态刷新 url 的频道 id（须与 CHANNELS 里对应条目一致）
+const SBS_SPORTS_SOURCES = [ // 公开清单镜像（只读、免鉴权），按优先级排列；raw.githubusercontent.com 国内直连被重置，故走镜像
+  "https://gh-proxy.com/https://raw.githubusercontent.com/kenpark76/kenpark76.github.io/main/koreatv.json",
+  "https://ghproxy.net/https://raw.githubusercontent.com/kenpark76/kenpark76.github.io/main/koreatv.json",
+  "https://ghfast.top/https://raw.githubusercontent.com/kenpark76/kenpark76.github.io/main/koreatv.json",
+  "https://cdn.jsdelivr.net/gh/kenpark76/kenpark76.github.io@main/koreatv.json"
+];
+const SBS_REFRESH_MS = 15 * 60 * 1000; // 刷新间隔：token 2 小时有效，每 15 分钟刷一次留 8 倍余量
+let sbsTokenExp = 0;        // 当前地址里 token 的过期时间戳(ms)；0 表示尚未取到可用地址
+let sbsRefreshBusy = false; // 防重入：上一轮还没跑完就跳过本轮，避免并发重复拉取
+
+// 取文本（跟随最多 3 次重定向），用于拉取清单 JSON
+function fetchTextOnce(url, timeoutMs, depth) {
+  return new Promise((resolve, reject) => {
+    let up; try { up = new URL(url); } catch (e) { return reject(e); }              // 非法 URL 直接失败
+    const mm = up.protocol === "https:" ? https : http;                              // 按协议选模块
+    const req = mm.get(url, {
+      timeout: timeoutMs,
+      headers: { "User-Agent": "Mozilla/5.0 TvLiveTokenRefresh/1.0" }                // 部分镜像拒绝空 UA
+    }, (r) => {
+      const hop = depth || 0;                                                        // 当前重定向深度
+      if (r.statusCode >= 300 && r.statusCode < 400 && r.headers.location && hop < 3) {
+        r.resume();                                                                  // 丢弃 3xx 响应体
+        return resolve(fetchTextOnce(new URL(r.headers.location, url).toString(), timeoutMs, hop + 1)); // 跟一跳
+      }
+      if (r.statusCode !== 200) { r.resume(); return reject(new Error("HTTP " + r.statusCode)); } // 非 200 视为该镜像不可用
+      const chunks = [];                                                             // 收集响应体
+      r.on("data", (c) => chunks.push(c));
+      r.on("end", () => resolve(Buffer.concat(chunks).toString("utf8")));             // 完整文本返回
+      r.on("error", reject);
+    });
+    req.on("timeout", () => { req.destroy(new Error("timeout")); });                  // 超时主动断，避免挂住
+    req.on("error", reject);
+  });
+}
+
+// 解析 url 里 token 的过期时间(ms)；解析失败返回 0（调用方当作「无法确认有效期」处理）
+function tokenExpOf(url) {
+  try {
+    const t = new URL(url).searchParams.get("token");           // 取 query 里的 JWT
+    if (!t) return 0;                                            // 没有 token → 0
+    const payload = JSON.parse(Buffer.from(t.split(".")[1], "base64url").toString("utf8")); // 解 payload 段
+    return (payload.exp || 0) * 1000;                            // JWT exp 单位是秒，转毫秒
+  } catch (e) { return 0; }
+}
+
+// 拉一轮最新地址；成功则原地改写 CHANNELS 里该条的 url
+async function refreshSbsSports() {
+  if (sbsRefreshBusy) return;                                    // 已有刷新在跑 → 直接返回
+  sbsRefreshBusy = true;
+  try {
+    for (const src of SBS_SPORTS_SOURCES) {                      // 依次尝试每个镜像
+      try {
+        const txt = await fetchTextOnce(src, 25000);             // 拉清单
+        const data = JSON.parse(txt);                            // 清单是 JSON 数组
+        const list = Array.isArray(data) ? data : (data && Object.values(data)[0]);
+        if (!Array.isArray(list)) continue;                      // 结构不符 → 换下一个镜像
+        const ch = list.find((c) => c && typeof c.name === "string"
+          && /^sbs\s*스포츠$/i.test(c.name.trim()));              // 按台名精确匹配「SBS스포츠」
+        const url = ch && Array.isArray(ch.uris) ? String(ch.uris[0] || "") : "";
+        if (!url || !/tvlive\.sbs\.co\.kr/.test(url)) continue;   // 地址不符合预期 → 换下一个镜像
+        const exp = tokenExpOf(url);                             // 取 token 过期时间
+        if (exp && exp <= Date.now()) continue;                  // token 已过期（镜像缓存旧版）→ 换下一个
+        const target = CHANNELS.find((c) => c.id === SBS_SPORTS_ID);
+        if (target) target.url = url;                            // 原地更新，/api/channels 与 /api/check 自动生效
+        sbsTokenExp = exp;
+        console.log("[sbs-sports] token 已刷新，过期于 " + (exp ? new Date(exp).toISOString() : "未知"));
+        return;
+      } catch (e) { /* 该镜像不通就静默试下一个 */ }
+    }
+    console.warn("[sbs-sports] 全部镜像均未取到新 token，保留当前地址");
+  } finally {
+    sbsRefreshBusy = false;
+  }
+}
+refreshSbsSports();                                     // 启动时立即刷一次，避免首屏拿到无 token 的占位地址
+setInterval(refreshSbsSports, SBS_REFRESH_MS).unref();  // 之后每 15 分钟一次；unref 让定时器不阻止进程退出
 
 // 每个频道的节目单标题池（用于动态生成 EPG）
 const EPG_TITLES = {
@@ -198,6 +289,7 @@ const EPG_TITLES = {
   164: ["CCTV-13 新闻频道 · 直播", "CCTV-13 新闻频道 · 精选", "CCTV-13 新闻频道 · 热门", "CCTV-13 新闻频道 · 回放"],
   165: ["CCTV-1 综合 · 直播", "CCTV-1 综合 · 精选", "CCTV-1 综合 · 热门", "CCTV-1 综合 · 回放"],
   166: ["강원SBS · 直播", "강원SBS · 精选", "강원SBS · 热门", "강원SBS · 回放"],
+  167: ["SBS 스포츠 · 直播", "SBS 스포츠 · 精选", "SBS 스포츠 · 热门", "SBS 스포츠 · 回放"],
 };
 
 // 根据当前时间动态生成某频道的 EPG（过去 1 档 + 现在 + 未来 3 档，每档 30 分钟）
@@ -657,7 +749,14 @@ const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, `http://localhost:${PORT}`);
   const p = u.pathname;
 
-  if (p === "/api/health") return sendJson(res, { ok: true, version: VERSION, ts: Date.now() });
+  // /api/health 额外回报 SBS Sports 的 token 状态，方便外部一眼看出「这台的地址还有没有效」
+  if (p === "/api/health") return sendJson(res, {
+    ok: true, version: VERSION, ts: Date.now(),
+    sbsSports: {                                  // 动态 token 频道的健康信息
+      exp: sbsTokenExp || null,                   // token 过期时间戳(ms)，null 表示尚未取到
+      expiresInMin: sbsTokenExp ? Math.round((sbsTokenExp - Date.now()) / 60000) : null // 剩余分钟数（负数=已过期）
+    }
+  });
   if (p === "/api/channels") return sendJson(res, CHANNELS);
   // 前端配置：回放站默认地址（前端可被 localStorage 覆盖）
   if (p === "/api/config") return sendJson(res, { version: VERSION, replayUrl: REPLAY_URL });
