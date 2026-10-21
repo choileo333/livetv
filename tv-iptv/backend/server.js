@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.17"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.18"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 
 // 往期回放站地址（前端「回放」模式的默认地址）。
 // 因该地址可能经常变动：前端页面内可随时覆盖（存浏览器 localStorage），无需改代码/重新部署；
@@ -99,8 +99,8 @@ const CHANNELS = [
   {"id": 102, "name": "Arirang Radio (720p)", "url": "http://amdlive-ch01.ctnd.com.edgesuite.net/arirang_3ch/smil:arirang_3ch.smil/playlist.m3u8", "logo": "https://i.imgurange.com/dtfiG9k.png", "group": "韩国", "note": "公开免费韩国直播（iptv-org）"},
   {"id": 104, "name": "Arirang TV HD (720p)", "url": "http://45.162.64.114/ARIRANG/index.m3u8", "logo": "https://i.imgur.com/Asu5pE9.png", "group": "韩国", "note": "公开免费韩国直播（iptv-org）"},
   {"id": 107, "name": "KTV (South Korea) (1080p)", "url": "https://hlive.ktv.go.kr/live/klive_h.stream/playlist.m3u8", "logo": "https://i.ibb.co/WkrLDJW/Screenshot-20230714-135036-removebg-preview.png", "group": "韩国", "note": "公开免费韩国直播（iptv-org）"},
-  {"id": 148, "name": "FGTV (720p/480p)", "url": "https://fgtvlive.fgtv.com/smil:fgtv.smil/playlist.m3u8", "logo": "", "group": "韩国", "note": "公开免费韩国直播 · 本机实测流畅（含 480p 低码率档 296kbps，弱网友好）"},
-  {"id": 149, "name": "RUTC TV (720p)", "url": "http://d26sxnc75smwvh.cloudfront.net/livehttporigin/rutclive_720p2.stream/playlist.m3u8", "logo": "", "group": "韩国", "note": "公开免费韩国直播 · CloudFront CDN，本机实测约 17Mbps 流畅"},
+  {"id": 148, "name": "교회TV1 FG", "url": "https://fgtvlive.fgtv.com/smil:fgtv.smil/playlist.m3u8", "logo": "", "group": "韩国", "note": "公开免费韩国直播 · 本机实测流畅（含 480p 低码率档 296kbps，弱网友好）"},
+  {"id": 149, "name": "교회TV2 지식", "url": "http://d26sxnc75smwvh.cloudfront.net/livehttporigin/rutclive_720p2.stream/playlist.m3u8", "logo": "", "group": "韩国", "note": "公开免费韩国直播 · CloudFront CDN，本机实测约 17Mbps 流畅"},
   {"id": 105, "name": "YTN (720p)", "url": "https://ytnlive.ytn.co.kr/ytn/_definst_/ytnlive_stream_20220426/medialist_9171188557012390620_hls.m3u8", "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/YTN_logo_2014.svg/960px-YTN_logo_2014.svg.png", "group": "韩国", "note": "YTN 官方源 ytnlive.ytn.co.kr · 清单/分片/中继全通 200，无加密（旧 iptv-org 直连 IP 源已死，2026-10-15 更换）"},
   {"id": 106, "name": "TBS TV (720p)", "url": "https://cdntv.tbs.seoul.kr/tbs/tbs_tv_web.smil/playlist.m3u8", "logo": "https://i.imgur.com/iOnWS6V.png", "group": "韩国", "note": "公开免费韩国直播（iptv-org）"},
   {"id": 108, "name": "EBS 1TV (400p)", "url": "http://ebsonairios.ebs.co.kr/groundwavetablet500k/tablet500k/playlist.m3u8", "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/EBS_1TV_Logo.svg/960px-EBS_1TV_Logo.svg.png", "group": "韩国", "note": "EBS 官方源 · 本机实测 10.8Mbps"},
@@ -124,7 +124,7 @@ const CHANNELS = [
   {"id": 58, "name": "ACC Digital Network (1080p)", "url": "https://raycom-accdn-firetv.amagi.tv/playlist.m3u8", "logo": "https://i.imgur.com/V6Kaqha.png", "group": "体育", "note": "Amagi CDN"},
   {"id": 130, "name": "대전MBC", "url": "https://ns1.tjmbc.co.kr/live/myStream.sdp/playlist.m3u8", "logo": "", "group": "韩国", "note": "MBC 大田地方台 · 实测 11.2Mbps (GitHub:skylover007)"},
   {"id": 133, "name": "청주SBS", "url": "http://1.222.207.80:1935/live/cjbtv/playlist.m3u8", "logo": "", "group": "韩国", "note": "SBS 清州地方台 · 实测 4.9Mbps"},
-  {"id": 134, "name": "GCN (720p)", "url": "http://liveko24-manminglobal3.ktcdn.co.kr/liveko24/gcnko_1300k.stream/playlist.m3u8", "logo": "", "group": "韩国", "note": "韩国 GCN 综合台 · 实测 3.9Mbps"},
+  {"id": 134, "name": "교회TV3 GCN", "url": "http://liveko24-manminglobal3.ktcdn.co.kr/liveko24/gcnko_1300k.stream/playlist.m3u8", "logo": "", "group": "韩国", "note": "韩国 GCN 综合台 · 实测 3.9Mbps"},
   {"id": 135, "name": "제주MBC", "url": "https://wowza.jejumbc.com/live/tv_jejumbc/playlist.m3u8", "logo": "", "group": "韩国", "note": "MBC 济州地方台 · 深度探测实测可流畅播放 (sandbox kbps≈11Mbps)"},
   {"id": 136, "name": "전주SBS", "url": "http://61.85.197.53:1935/jtv_live/myStream/playlist.m3u8", "logo": "", "group": "韩国", "note": "SBS 全州地方台 · 深度探测实测可流畅播放 (sandbox kbps≈6.6Mbps)"},
   {"id": 137, "name": "KBS 1TV (首尔主台)", "url": "http://123.108.164.71/etv2sb/phd852/playlist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "KBS 1TV 首尔主台 · 本机直连(关中继)。⚠️ 源为 HTTP，HTTPS 页面会被浏览器混合内容策略拦截，大概率打不开；且经中继不可达(地域封锁)。未经验证，属碰运气"},
@@ -172,8 +172,8 @@ const EPG_TITLES = {
   105: ["YTN (720p) · 直播", "YTN (720p) · 精选", "YTN (720p) · 热门", "YTN (720p) · 回放"],
   106: ["TBS TV (720p) · 直播", "TBS TV (720p) · 精选", "TBS TV (720p) · 热门", "TBS TV (720p) · 回放"],
   107: ["KTV (South Korea) (1080p) · 直播", "KTV (South Korea) (1080p) · 精选", "KTV (South Korea) (1080p) · 热门", "KTV (South Korea) (1080p) · 回放"],
-  148: ["FGTV (720p/480p) · 直播", "FGTV (720p/480p) · 精选", "FGTV (720p/480p) · 热门", "FGTV (720p/480p) · 回放"],
-  149: ["RUTC TV (720p) · 直播", "RUTC TV (720p) · 精选", "RUTC TV (720p) · 热门", "RUTC TV (720p) · 回放"],
+  148: ["교회TV1 FG · 直播", "교회TV1 FG · 精选", "교회TV1 FG · 热门", "교회TV1 FG · 回放"],
+  149: ["교회TV2 지식 · 直播", "교회TV2 지식 · 精选", "교회TV2 지식 · 热门", "교회TV2 지식 · 回放"],
   108: ["EBS 1TV (400p) · 直播", "EBS 1TV (400p) · 精选", "EBS 1TV (400p) · 热门", "EBS 1TV (400p) · 回放"],
   118: ["농협tv · 直播", "농협tv · 精选", "농협tv · 热门", "농협tv · 回放"],
   121: ["ABN (720p) · 直播", "ABN (720p) · 精选", "ABN (720p) · 热门", "ABN (720p) · 回放"],
@@ -183,7 +183,7 @@ const EPG_TITLES = {
   146: ["OUN (1080p) · 直播", "OUN (1080p) · 精选", "OUN (1080p) · 热门", "OUN (1080p) · 回放"],
   130: ["대전MBC · 直播", "대전MBC · 精选", "대전MBC · 热门", "대전MBC · 回放"],
   133: ["청주SBS · 直播", "청주SBS · 精选", "청주SBS · 热门", "청주SBS · 回放"],
-  134: ["GCN (720p) · 直播", "GCN (720p) · 精选", "GCN (720p) · 热门", "GCN (720p) · 回放"],
+  134: ["교회TV3 GCN · 直播", "교회TV3 GCN · 精选", "교회TV3 GCN · 热门", "교회TV3 GCN · 回放"],
   135: ["제주MBC · 直播", "제주MBC · 精选", "제주MBC · 热门", "제주MBC · 回放"],
   136: ["전주SBS · 直播", "전주SBS · 精选", "전주SBS · 热门", "전주SBS · 回放"],
   150: ["Hallmark Movies & More (1080p) · 直播", "Hallmark Movies & More (1080p) · 精选", "Hallmark Movies & More (1080p) · 热门", "Hallmark Movies & More (1080p) · 回放"],

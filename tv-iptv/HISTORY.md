@@ -2,6 +2,27 @@
 
 > 按用户既定规范：每次改动记录「时间 + 改了什么 + 为什么」。文件名/程序内含版本号，原稿只读、新版本独立派生。
 
+## v0.3.18 — 2026-10-21 17:0x（3 台教会台改编号名）
+
+### 1) 用户诉求
+- 「FGTV 改成교회TV1 FG，RUTC TV 改成 교회TV2 지식，GCN 改成 교회TV3 GCN」
+- 目的：把这三家教会背景频道统一成「교회TV1/2/3」编号前缀，方便用户一眼看出它们是同系列。
+
+### 2) 改动明细
+
+| id | 原名 | 新名 | 源（未改动） |
+|---|---|---|---|
+| 148 | FGTV (720p/480p) | 교회TV1 FG | `https://fgtvlive.fgtv.com/smil:fgtv.smil/playlist.m3u8` |
+| 149 | RUTC TV (720p) | 교회TV2 지식 | `http://d26sxnc75smwvh.cloudfront.net/livehttporigin/rutclive_720p2.stream/playlist.m3u8` |
+| 134 | GCN (720p) | 교회TV3 GCN | `http://liveko24-manminglobal3.ktcdn.co.kr/liveko24/gcnko_1300k.stream/playlist.m3u8` |
+
+**同步范围**：`CHANNELS` + `EPG_TITLES`（回看标题表，播放器台名实际从 EPG 标题读，不改会显示旧名）；播放地址、分组、logo、note 全部未动，可用性不受影响。新名已丢掉 `(720p/480p)` 之类的画质后缀，画质信息见本文件与 `reports/kr-channels-2026-10-21.*`。
+
+### 3) 结果
+- 频道总数仍 55，韩国组仍 28（仅改名，无增删）。
+- 线上 `/api/health` = `0.3.18`；`/api/channels` 与 `/api/epg` 逐台核对 3 台均为新名。
+- 安卓测试夹具 `channels_live.json`、韩国频道报告（csv/html）同步改名。
+
 ## v0.3.17 — 2026-10-21 17:0x（删 4 台 + 8 台改韩文名）
 
 ### 1) 用户诉求
