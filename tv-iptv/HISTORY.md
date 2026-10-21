@@ -2,6 +2,33 @@
 
 > 按用户既定规范：每次改动记录「时间 + 改了什么 + 为什么」。文件名/程序内含版本号，原稿只读、新版本独立派生。
 
+## v0.3.26 — 2026-10-21 22:5x（SBS 主台/MBC 换新源；SBS 主台接入 token 自动刷新；JTBC 换代理源但仍限韩）
+
+### 1) 用户诉求
+- 「JTBC / SBS / MBC 重新找吧。。。 还有， KBS 的话，必须得是韩国的IP 才行吗」
+- 背景：v0.3.25 查明 id139/140/141 旧源 `azure2986.fastedge.net` 已 NXDOMAIN 死亡，需换新源。
+
+### 2) 找源实测（全部经线上中继服务端代抓，非猜测）
+- 数据来源：`koreatv.json`（kenpark76，含 KBS1/2、JTBC、SBS、MBC 等条目的每小时重签 token）+ `backup.760515.xyz` 代理 + 公开清单。
+- **SBS 主台 ✅**：koreatv.json 中 name="SBS" = `tvlive.sbs.co.kr/sbsch6/sbsch61.stream/playlist.m3u8?token=...`（与 SBS 体育同源、2h 滚动 token）。经中继实测 master 200 → variant 200 → 末段 **200/608KB 真实视频**。
+- **MBC ⚠️**：`vod.mpmbc.co.kr:1935/live/encoder-tv/playlist.m3u8`（MBC 木浦地方台，境外可连）。部署前经中继 master→variant→末段 200/**907KB**；部署后复测末段连续 40s 超时（3 轮跑 8 分钟未完）→ 属木浦小地方台源站出口弱，与 v0.3.22 的 4 个 MBC 地方台同病：**可连但慢、易缓冲**。首尔 MBC 主台限韩、无免韩源。
+- **JTBC ❌**：无免韩 IP 的 HLS 源。公开源全限韩（azure2986 死、1.214.67.x 需韩IP+session、everyon.tv 为 RTMP 且限韩）；760515 代理的 JTBC-playlist 只转发第一层，内部真实流指向 tving CDN，中继抓变体 **403**。→ 仅安卓+韩VPN 可能。
+- **KBS 1/2**：确认必须韩 IP。裸 IP 源中继 502；760515 代理 KBS1/2 中继变体 403（tving 限韩）。无免韩源；仅安卓+韩VPN 直连（已 relay:false）。
+
+### 3) 改动（仅换源 + token 刷新扩展，未增删频道）
+- id140 SBS：url → `tvlive.sbs.co.kr/sbsch6/sbsch61.stream/playlist.m3u8`（占位，运行时补 token）；relay `false→true`（中继可播，网页+安卓都看）。
+- id141 MBC：url → `vod.mpmbc.co.kr:1935/live/encoder-tv/playlist.m3u8`；名称/注释改「MBC (木浦地方台)」；relay `false→true`。
+- id139 JTBC：url → `backup.760515.xyz/playlist/JTBC-playlist.m3u8`；relay 仍 `false`；注释标明中继 403、需韩VPN。
+- 新增 `SBS_MAIN_ID=140`；`refreshSbsSports` 改为按 `SBS_TOKEN_TARGETS`（167 体育 + 140 主台）同时刷新；`sbsTokenExp`(单值) → `sbsTokenExps`(按 id 的对象，体检取最早过期)。
+- `/api/health` 的 `sbsSports` 新增 `byId` 明细，`exp` 取最早过期值。
+- VERSION `0.3.25 → 0.3.26`。安卓夹具 `channels_live.json` 同步 139/140/141。
+
+### 4) 验证（部署后）
+- health：version `0.3.26`；`sbsSports.byId` = `{140:exp, 167:exp}`（两 token 均刷新成功，剩余约 66min）。
+- SBS 主台(140) 线上中继：master 200 → variant 200 → 末段 **200/608KB 真实视频 ✅**。
+- MBC 木浦(141) 线上中继：master/variant 200；末段多次超时（慢，见上）。
+- JTBC(139) 线上中继：变体 403（限韩，符合预期）。
+
 ## v0.3.25 — 2026-10-21 21:3x（地面主台「VPN 出口可播」配置核实 + 注释澄清）
 
 ### 1) 用户诉求

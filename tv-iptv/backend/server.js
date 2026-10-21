@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.25"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.26"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 
 // 往期回放站地址（前端「回放」模式的默认地址）。
 // 因该地址可能经常变动：前端页面内可随时覆盖（存浏览器 localStorage），无需改代码/重新部署；
@@ -127,9 +127,9 @@ const CHANNELS = [
   {"id": 136, "name": "전주SBS", "url": "http://61.85.197.53:1935/jtv_live/myStream/playlist.m3u8", "logo": "", "group": "韩国", "note": "SBS 全州地方台 · 深度探测实测可流畅播放 (sandbox kbps≈6.6Mbps)"},
   {"id": 137, "name": "KBS 1TV (首尔主台)", "url": "http://123.108.164.71/etv2sb/phd852/playlist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "KBS 1TV 首尔主台 · relay:false=安卓端本机直连(关云端中继)。⚠️ 源为 HTTP：网页端被强制走中继→502、且 HTTPS 混合内容被拦→网页打不开；但【安卓端挂韩国出口VPN直连可播】(IP 源按地域放行，从韩国出即放行)。无VPN则家宽直连也超时(地域封锁)。"},
   {"id": 138, "name": "KBS 2TV (首尔主台)", "url": "http://123.108.164.71/etv2/phd847/playlist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "KBS 2TV 首尔主台(韩剧/综艺主频道) · relay:false=安卓端本机直连(关云端中继)。⚠️ 源为 HTTP：网页端被强制走中继→502、且 HTTPS 混合内容被拦→网页打不开；但【安卓端挂韩国出口VPN直连可播】(IP 源按地域放行，从韩国出即放行)。无VPN则家宽直连也超时(地域封锁)。"},
-  {"id": 139, "name": "JTBC (首尔主台)", "url": "https://azure2986.fastedge.net/live2/5pb6uqm5gr/chunklist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "JTBC 首尔主台(韩剧/综艺) · relay:false 已开(便于日后换源后安卓直连)。⚠️ 当前源域名 azure2986.fastedge.net 已失效(NXDOMAIN，连根域 fastedge.net 都无 A 记录)。【即便挂韩国VPN也无法解析该域名】→ 必须换全新源地址才能播；未换源前此台不可播。"},
-  {"id": 140, "name": "SBS (首尔主台)", "url": "https://azure2986.fastedge.net/live2/fyy2qd90t9/chunklist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "SBS 首尔主台 · relay:false 已开(便于日后换源后安卓直连)。⚠️ 当前源域名 azure2986.fastedge.net 已失效(NXDOMAIN，连根域 fastedge.net 都无 A 记录)。【即便挂韩国VPN也无法解析该域名】→ 必须换全新源地址才能播；未换源前此台不可播。"},
-  {"id": 141, "name": "MBC (首尔主台)", "url": "https://azure2986.fastedge.net/live2/sdmgv7y53u/chunklist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "MBC 首尔主台 · relay:false 已开(便于日后换源后安卓直连)。⚠️ 当前源域名 azure2986.fastedge.net 已失效(NXDOMAIN，连根域 fastedge.net 都无 A 记录)。【即便挂韩国VPN也无法解析该域名】→ 必须换全新源地址才能播；未换源前此台不可播。"},
+  {"id": 139, "name": "JTBC (首尔主台)", "url": "https://backup.760515.xyz/playlist/JTBC-playlist.m3u8", "logo": "", "group": "韩国", "relay": false, "note": "JTBC 首尔主台(韩剧/综艺) · v0.3.26 换源：backup.760515.xyz 第三方代理。⚠️ 该代理只转发 playlist 第一层，内部真实流指向 tving CDN（限韩），故【云端中继 403 不可播】；仅【安卓端挂韩国出口VPN直连】时可能播（且需韩IP）。无VPN则本机直连也403。如无韩VPN此台实质不可播。"},
+  {"id": 140, "name": "SBS (首尔主台)", "url": "https://tvlive.sbs.co.kr/sbsch6/sbsch61.stream/playlist.m3u8", "logo": "", "group": "韩国", "relay": true, "note": "SBS 首尔主台 · v0.3.26 换源：tvlive.sbs.co.kr/sbsch6（与 SBS体育同源），地址含 2h 滚动 token，后端每5分钟体检、剩余<20min自动刷新（见 SBS_MAIN_ID）。经上海云端中继实测可播（720p）。无需VPN即可网页/安卓观看。⚠️ 依赖第三方清单 koreatv.json 维持 token，若停更则 2h 后失效"},
+  {"id": 141, "name": "MBC (木浦地方台)", "url": "http://vod.mpmbc.co.kr:1935/live/encoder-tv/playlist.m3u8", "logo": "", "group": "韩国", "relay": true, "note": "MBC 木浦放送局（전남 목포）地方台 · v0.3.26 换源：vod.mpmbc.co.kr（同 강원도MBC 同 IP 段，境外开放）。经上海云端中继实测可播（720p/4.3Mbps）。⚠️ 这是木浦地方台非首尔主台（地方新闻/转播），非首尔 MBC 主频道；首尔主台限韩无免韩源。无需VPN即可网页/安卓观看"},
   {"id": 150, "name": "Hallmark Movies & More (1080p)", "url": "https://dbrb49pjoymg4.cloudfront.net/v1/master/3fec3e5cac39a52b2132f9c66c83dae043dc17d4/prod_default_xumo-ams-aws/master.m3u8?ads.xumo_channelId=99991709", "logo": "", "group": "电影", "note": "Xumo FAST · 实测 7.6Mbps"},
   {"id": 151, "name": "MovieSphere UK (1080p)", "url": "https://moviesphereuk-samsunguk.amagi.tv/playlist.m3u8", "logo": "", "group": "电影", "note": "Amagi/Samsung FAST · 实测 2.5Mbps"},
   {"id": 152, "name": "MovieSphere (1080p)", "url": "https://amg00353-lionsgatestudio-moviesphere-xumo-zh5u0.amagi.tv/playlist.m3u8", "logo": "", "group": "电影", "note": "Lionsgate/Cineverse · Amagi · 实测 2.5Mbps"},
@@ -167,7 +167,8 @@ const CHANNELS = [
 // 做法：轮询多个 GitHub 加速镜像，从一个由韩国境内自动化程序「每小时整点批量刷新」的公开清单里，
 //       取该台的最新地址；只采用 JWT 尚未过期的地址，过期就换下一个镜像。
 // 容错：任一镜像失败自动换下一个；全部失败则保留上次成功的地址，绝不影响其它频道。
-const SBS_SPORTS_ID = 167;   // 需要动态刷新 url 的频道 id（须与 CHANNELS 里对应条目一致）
+const SBS_SPORTS_ID = 167;   // SBS 体育（sbsespn1.stream）频道 id
+const SBS_MAIN_ID   = 140;   // SBS 主台（sbsch6.stream）频道 id —— v0.3.26 起与主台共用同一套 token 刷新机制
 const SBS_SPORTS_SOURCES = [ // 公开清单镜像（只读、免鉴权），按优先级排列；raw.githubusercontent.com 国内直连被重置，故走镜像
   "https://gh-proxy.com/https://raw.githubusercontent.com/kenpark76/kenpark76.github.io/main/koreatv.json",
   "https://ghproxy.net/https://raw.githubusercontent.com/kenpark76/kenpark76.github.io/main/koreatv.json",
@@ -176,7 +177,7 @@ const SBS_SPORTS_SOURCES = [ // 公开清单镜像（只读、免鉴权），按
 ];
 const SBS_CHECK_MS = 5 * 60 * 1000;         // 体检间隔：每 5 分钟检查一次「要不要刷新」
 const SBS_AHEAD_MS = 20 * 60 * 1000;        // 触发阈值：token 剩余不足 20 分钟才去拉新的（不用每次都拉，省流量也更稳）
-let sbsTokenExp = 0;        // 当前地址里 token 的过期时间戳(ms)；0 表示尚未取到可用地址
+let sbsTokenExps = {};      // 各 SBS 频道当前 token 过期时间戳(ms)：{ [id]: exp }；缺省表示尚未取到可用地址
 let sbsRefreshBusy = false; // 防重入：上一轮还没跑完就跳过本轮，避免并发重复拉取
 
 // 取文本（跟随最多 3 次重定向），用于拉取清单 JSON
@@ -214,11 +215,19 @@ function tokenExpOf(url) {
   } catch (e) { return 0; }
 }
 
-// 拉一轮最新地址；成功则原地改写 CHANNELS 里该条的 url
-// force=true 时无条件去拉（启动首刷用）；否则仅当「还没有地址」或「剩余不足 SBS_AHEAD_MS」才拉
+// 需要动态刷新的 SBS 频道清单：从同一份 koreatv.json 里按台名匹配取带 token 的最新地址
+const SBS_TOKEN_TARGETS = [
+  { id: SBS_SPORTS_ID, nameRe: /^sbs\s*스포츠$/i }, // SBS 体育（sbsespn1.stream）
+  { id: SBS_MAIN_ID,   nameRe: /^sbs$/i }           // SBS 主台（sbsch6.stream）—— koreatv.json 里 name 即 "SBS"
+];
+
+// 拉一轮最新地址；成功则原地改写对应频道的 url
+// force=true 时无条件去拉（启动首刷用）；否则仅当「还没有地址」或「任一 token 剩余不足 SBS_AHEAD_MS」才拉
 async function refreshSbsSports(force) {
   if (sbsRefreshBusy) return;                                    // 已有刷新在跑 → 直接返回
-  if (!force && sbsTokenExp && sbsTokenExp - Date.now() > SBS_AHEAD_MS) return; // 余量充足，本轮不必拉
+  const exps = Object.values(sbsTokenExps).filter(Boolean);
+  const minExp = exps.length ? Math.min(...exps) : 0;            // 取所有频道中最早过期的 token 作为体检基准
+  if (!force && minExp && minExp - Date.now() > SBS_AHEAD_MS) return; // 全部余量充足，本轮不必拉
   sbsRefreshBusy = true;
   try {
     for (const src of SBS_SPORTS_SOURCES) {                      // 依次尝试每个镜像
@@ -227,23 +236,25 @@ async function refreshSbsSports(force) {
         const data = JSON.parse(txt);                            // 清单是 JSON 数组
         const list = Array.isArray(data) ? data : (data && Object.values(data)[0]);
         if (!Array.isArray(list)) continue;                      // 结构不符 → 换下一个镜像
-        const ch = list.find((c) => c && typeof c.name === "string"
-          && /^sbs\s*스포츠$/i.test(c.name.trim()));              // 按台名精确匹配「SBS스포츠」
-        const url = ch && Array.isArray(ch.uris) ? String(ch.uris[0] || "") : "";
-        if (!url || !/tvlive\.sbs\.co\.kr/.test(url)) continue;   // 地址不符合预期 → 换下一个镜像
-        const exp = tokenExpOf(url);                             // 取 token 过期时间
-        if (exp && exp <= Date.now()) continue;                  // token 已过期（镜像缓存旧版）→ 换下一个
-        if (exp && sbsTokenExp && exp <= sbsTokenExp) {          // 拿到的并不比手上新（上游还没整点换批）
-          return;                                                // 保留现状，等下一轮体检再试，避免无谓改写
+        let updatedAny = false;
+        for (const t of SBS_TOKEN_TARGETS) {                     // 体育 + 主台 两个都尝试更新
+          const ch = list.find((c) => c && typeof c.name === "string" && t.nameRe.test(c.name.trim()));
+          const url = ch && Array.isArray(ch.uris) ? String(ch.uris[0] || "") : "";
+          if (!url || !/tvlive\.sbs\.co\.kr/.test(url)) continue; // 地址不符合预期 → 跳过该频道
+          const exp = tokenExpOf(url);                           // 取 token 过期时间
+          if (exp && exp <= Date.now()) continue;                // token 已过期（镜像缓存旧版）→ 跳过
+          const cur = sbsTokenExps[t.id];
+          if (exp && cur && exp <= cur) continue;                // 拿到的并不比手上新（上游还没整点换批）→ 跳过
+          const target = CHANNELS.find((c) => c.id === t.id);
+          if (target) target.url = url;                          // 原地更新，/api/channels 与 /api/check 自动生效
+          sbsTokenExps[t.id] = exp;
+          updatedAny = true;
+          console.log("[sbs-token] id=" + t.id + " 已刷新，过期于 " + (exp ? new Date(exp).toISOString() : "未知"));
         }
-        const target = CHANNELS.find((c) => c.id === SBS_SPORTS_ID);
-        if (target) target.url = url;                            // 原地更新，/api/channels 与 /api/check 自动生效
-        sbsTokenExp = exp;
-        console.log("[sbs-sports] token 已刷新，过期于 " + (exp ? new Date(exp).toISOString() : "未知"));
-        return;
+        if (updatedAny) return;                                  // 任一镜像成功取到更新就收手
       } catch (e) { /* 该镜像不通就静默试下一个 */ }
     }
-    console.warn("[sbs-sports] 全部镜像均未取到更新 token，保留当前地址");
+    console.warn("[sbs-token] 全部镜像均未取到更新 token，保留当前地址");
   } finally {
     sbsRefreshBusy = false;
   }
@@ -771,14 +782,19 @@ const server = http.createServer(async (req, res) => {
   const u = new URL(req.url, `http://localhost:${PORT}`);
   const p = u.pathname;
 
-  // /api/health 额外回报 SBS Sports 的 token 状态，方便外部一眼看出「这台的地址还有没有效」
-  if (p === "/api/health") return sendJson(res, {
-    ok: true, version: VERSION, ts: Date.now(),
-    sbsSports: {                                  // 动态 token 频道的健康信息
-      exp: sbsTokenExp || null,                   // token 过期时间戳(ms)，null 表示尚未取到
-      expiresInMin: sbsTokenExp ? Math.round((sbsTokenExp - Date.now()) / 60000) : null // 剩余分钟数（负数=已过期）
-    }
-  });
+  // /api/health 额外回报 SBS 动态 token 频道的状态（体育 + 主台），方便外部一眼看出「地址还有没有效」
+  if (p === "/api/health") {
+    const sbsAllExps = Object.values(sbsTokenExps).filter(Boolean);
+    const sbsMin = sbsAllExps.length ? Math.min(...sbsAllExps) : null;
+    return sendJson(res, {
+      ok: true, version: VERSION, ts: Date.now(),
+      sbsSports: {                                  // 动态 token 频道的健康信息
+        exp: sbsMin,                               // 最早过期的 token 时间戳(ms)，null 表示尚未取到
+        expiresInMin: sbsMin ? Math.round((sbsMin - Date.now()) / 60000) : null, // 剩余分钟数（负数=已过期）
+        byId: sbsTokenExps                         // 各频道(id)的过期时间戳明细
+      }
+    });
+  }
   if (p === "/api/channels") return sendJson(res, CHANNELS);
   // 前端配置：回放站默认地址（前端可被 localStorage 覆盖）
   if (p === "/api/config") return sendJson(res, { version: VERSION, replayUrl: REPLAY_URL });
