@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TvLive 韩国频道总览 · 2026-10-21</title>
+<style>
+  :root{
+    --bg:#f5f6f8; --card:#ffffff; --ink:#111827; --ink2:#4b5563; --ink3:#9ca3af;
+    --line:#e5e7eb; --ok:#16a34a; --okbg:#ecfdf5; --bad:#9ca3af; --badbg:#f3f4f6;
+    --warn:#d97706; --warnbg:#fffbeb; --accent:#1d4ed8;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:36px 22px 64px}
+  header{margin-bottom:26px}
+  h1{font-size:26px;margin:0 0 6px;letter-spacing:-.3px}
+  .sub{color:var(--ink2);font-size:13.5px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:22px 0 30px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+  .stat .n{font-size:26px;font-weight:700;letter-spacing:-.5px;line-height:1.2}
+  .stat .l{font-size:12.5px;color:var(--ink2);margin-top:2px}
+  .stat.ok .n{color:var(--ok)} .stat.bad .n{color:#6b7280}
+  h2{font-size:15px;margin:34px 0 10px;letter-spacing:.2px;display:flex;align-items:center;gap:9px}
+  h2 .cnt{font-size:12px;font-weight:500;color:var(--ink2);background:#eceef2;border-radius:20px;padding:1px 9px}
+  table{width:100%;border-collapse:separate;border-spacing:0;background:var(--card);
+    border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:13.5px}
+  th{text-align:left;font-weight:600;font-size:12px;color:var(--ink2);letter-spacing:.4px;
+    padding:9px 14px;background:#fafbfc;border-bottom:1px solid var(--line);text-transform:uppercase}
+  td{padding:10px 14px;border-bottom:1px solid #f1f2f4;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:7px;vertical-align:1px}
+  .dot.on{background:var(--ok);box-shadow:0 0 0 3px var(--okbg)}
+  .dot.off{background:#c2c7cf}
+  .dot.mid{background:var(--warn);box-shadow:0 0 0 3px var(--warnbg)}
+  .nm{font-weight:600}
+  .bad .nm, tr.dead .nm{color:#6b7280;font-weight:500}
+  .id{font-size:11.5px;color:var(--ink3);font-variant-numeric:tabular-nums;margin-left:6px}
+  .res{font-size:12px;color:var(--ink2);white-space:nowrap}
+  .how{font-size:12px;color:var(--ink2);white-space:nowrap}
+  .val{font-size:12.5px;color:var(--ink2)}
+  .tag{font-size:11px;padding:1px 7px;border-radius:99px;background:#eef2ff;color:#3730a3;white-space:nowrap}
+  .tag.g{background:#ecfdf5;color:#166534}
+  .tag.w{background:#fffbeb;color:#92400e}
+  .tag.gray{background:#f3f4f6;color:#6b7280}
+  .note{margin-top:34px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;font-size:12.8px;color:var(--ink2)}
+  .note b{color:var(--ink)}
+  .note ul{margin:8px 0 0;padding-left:18px}
+  .note li{margin:3px 0}
+  @media (max-width:640px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .wrap{padding:24px 14px 48px}
+    table{font-size:12.5px}
+    th,td{padding:8px 10px}
+    .how{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>TvLive 韩国频道总览</h1>
+    <div class="sub">后端 v0.3.17 · 共 28 个韩国频道 · 实测时间 2026-10-21 15:3x / 删改于 17:0x（GMT+8）· 检测方式：透过线上中继逐台取「清单 → 变体 → 分片」</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n">28</div><div class="l">韩国频道总数</div></div>
+    <div class="stat ok"><div class="n">22</div><div class="l">实测可播放</div></div>
+    <div class="stat bad"><div class="n">6</div><div class="l">不可用 / 不稳定</div></div>
+    <div class="stat"><div class="n">55</div><div class="l">全站频道总数</div></div>
+  </div>
+
+  <h2>一、新闻 · 综合 · 主流台 <span class="cnt">7 台 · 全部可用</span></h2>
+  <table>
+    <thead><tr><th style="width:44%">频道</th><th>画质</th><th>线路</th><th>实测结果</th></tr></thead>
+    <tbody>
+      <tr><td><span class="dot on"></span><span class="nm">TV 조선</span><span class="id">#101</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">4,755 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">TV조선2</span><span class="id">#100</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">2,444 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">YTN</span><span class="id">#105</span> <span class="tag g">官方源</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">1,985 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">TBS TV（首尔交通放送）</span><span class="id">#106</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">223 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">Arirang TV（阿里郎国际台）</span><span class="id">#103</span></td><td class="res">1080p</td><td class="how">云端中继</td><td class="val">118 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">Arirang TV HD</span><span class="id">#104</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">51 KB 分片（低码率）</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">Arirang Radio（阿里郎电台）</span><span class="id">#102</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">137 KB 分片</td></tr>
+    </tbody>
+  </table>
+
+  <h2>二、公共 · 教育 · 专门频道 <span class="cnt">10 台 · 全部可用</span></h2>
+  <table>
+    <thead><tr><th style="width:44%">频道</th><th>画质</th><th>线路</th><th>实测结果</th></tr></thead>
+    <tbody>
+      <tr><td><span class="dot on"></span><span class="nm">KTV（韩国国政放送）</span><span class="id">#107</span></td><td class="res">1080p</td><td class="how">云端中继</td><td class="val">2,128 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">EBS 1TV（教育放送）</span><span class="id">#108</span> <span class="tag g">官方源</span></td><td class="res">400p</td><td class="how">云端中继</td><td class="val">750 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">농협tv</span><span class="id">#118</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">2,716 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">OUN（韩国放送通信大学）</span><span class="id">#146</span></td><td class="res">1080p</td><td class="how">云端中继</td><td class="val">1,084 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">KCTV（基督教放送）</span><span class="id">#144</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">469 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">GCN（综合台）</span><span class="id">#134</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">247 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">NBS</span><span class="id">#145</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">357 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">HLAO-DTV</span><span class="id">#126</span> <span class="tag gray">非 24h</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">1,009 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">FGTV</span><span class="id">#148</span></td><td class="res">720p / 480p</td><td class="how">云端中继</td><td class="val">1,096 KB 分片（含低码率档）</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">RUTC TV</span><span class="id">#149</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">3,286 KB 分片（CloudFront）</td></tr>
+    </tbody>
+  </table>
+
+  <h2>三、MBC 系（含地方台） <span class="cnt">2 可用 / 3</span></h2>
+  <table>
+    <thead><tr><th style="width:44%">频道</th><th>画质</th><th>线路</th><th>实测结果</th></tr></thead>
+    <tbody>
+      <tr><td><span class="dot on"></span><span class="nm">대전MBC</span><span class="id">#130</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">630 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">제주MBC</span><span class="id">#135</span></td><td class="res">352p</td><td class="how">云端中继</td><td class="val">1,655 KB 分片</td></tr>
+      <tr class="dead"><td><span class="dot off"></span><span class="nm">MBC（首尔主台）</span><span class="id">#141</span></td><td class="res">—</td><td class="how">直连</td><td class="val">域名 azure2986.fastedge.net 已无法解析</td></tr>
+    </tbody>
+  </table>
+
+  <h2>四、SBS 系（含地方台） <span class="cnt">3 可用 / 4</span></h2>
+  <table>
+    <thead><tr><th style="width:44%">频道</th><th>画质</th><th>线路</th><th>实测结果</th></tr></thead>
+    <tbody>
+      <tr><td><span class="dot on"></span><span class="nm">청주SBS</span><span class="id">#133</span></td><td class="res">540p</td><td class="how">云端中继</td><td class="val">363 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">전주SBS</span><span class="id">#136</span></td><td class="res">406p</td><td class="how">云端中继</td><td class="val">736 KB 分片</td></tr>
+      <tr><td><span class="dot on"></span><span class="nm">강원SBS</span><span class="id">#166</span> <span class="tag w">仅家宽</span></td><td class="res">720p</td><td class="how">本机直连</td><td class="val">1,269 KB 分片 · 已抽帧认台标</td></tr>
+      <tr class="dead"><td><span class="dot off"></span><span class="nm">SBS（首尔主台）</span><span class="id">#140</span></td><td class="res">—</td><td class="how">直连</td><td class="val">域名 azure2986.fastedge.net 已无法解析</td></tr>
+    </tbody>
+  </table>
+
+  <h2>五、其余不可用 <span class="cnt">4 台（加上分组内 2 台首尔主台，共 6 台）</span></h2>
+  <table>
+    <thead><tr><th style="width:44%">频道</th><th>画质</th><th>线路</th><th>实测结果</th></tr></thead>
+    <tbody>
+      <tr class="dead"><td><span class="dot off"></span><span class="nm">KBS 1TV（首尔主台）</span><span class="id">#137</span></td><td class="res">—</td><td class="how">直连</td><td class="val">源站返回 400（地域限制）</td></tr>
+      <tr class="dead"><td><span class="dot off"></span><span class="nm">KBS 2TV（首尔主台）</span><span class="id">#138</span></td><td class="res">—</td><td class="how">直连</td><td class="val">源站返回 400（地域限制）</td></tr>
+      <tr class="dead"><td><span class="dot off"></span><span class="nm">JTBC（首尔主台）</span><span class="id">#139</span></td><td class="res">—</td><td class="how">直连</td><td class="val">域名 azure2986.fastedge.net 已无法解析</td></tr>
+      <tr class="dead"><td><span class="dot mid"></span><span class="nm">ABN</span><span class="id">#121</span></td><td class="res">720p</td><td class="how">云端中继</td><td class="val">时通时断（三次测试 1 成 2 败）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <b>状态说明</b>
+    <ul>
+      <li><b>实测可播放</b>：经线上中继完整走通「主清单 → 变体清单 → 真实 TS 分片」，拿到 200 且分片体积正常。不是只看清单能不能打开。</li>
+      <li><b>云端中继 / 本机直连</b>：「中继」= 由上海云端服务器代取，手机和电脑都能看；「本机直连」= 只能你的家宽直接连源站，网页版可能被 https 混合内容策略拦。</li>
+      <li><b>分片大小</b>只反映码率与关键帧密度，不代表画质好坏（1080p 台也可能只有几十 KB/分片）。</li>
+      <li><b>非 24h</b>：该台本身不是全天播出，凌晨或深夜点开会黑屏，属正常现象。</li>
+      <li><b>6 台不可用的主因</b>：韩国三大台（KBS/SBS/MBC）与 JTBC 首尔主台不对境外开放直链，azure2986 系列域名已整体失效；ABN 源站时通时断。<br><b>v0.3.17 调整</b>：已按用户要求删除 EBS 2TV / Gugak TV / 国防 TV / RTV 四台，其余 8 台改为韩文台名。</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>
