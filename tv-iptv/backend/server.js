@@ -168,7 +168,8 @@ const SBS_SPORTS_SOURCES = [ // 公开清单镜像（只读、免鉴权），按
   "https://ghfast.top/https://raw.githubusercontent.com/kenpark76/kenpark76.github.io/main/koreatv.json",
   "https://cdn.jsdelivr.net/gh/kenpark76/kenpark76.github.io@main/koreatv.json"
 ];
-const SBS_REFRESH_MS = 15 * 60 * 1000; // 刷新间隔：token 2 小时有效，每 15 分钟刷一次留 8 倍余量
+const SBS_CHECK_MS = 5 * 60 * 1000;         // 体检间隔：每 5 分钟检查一次「要不要刷新」
+const SBS_AHEAD_MS = 20 * 60 * 1000;        // 触发阈值：token 剩余不足 20 分钟才去拉新的（不用每次都拉，省流量也更稳）
 let sbsTokenExp = 0;        // 当前地址里 token 的过期时间戳(ms)；0 表示尚未取到可用地址
 let sbsRefreshBusy = false; // 防重入：上一轮还没跑完就跳过本轮，避免并发重复拉取
 
@@ -208,8 +209,10 @@ function tokenExpOf(url) {
 }
 
 // 拉一轮最新地址；成功则原地改写 CHANNELS 里该条的 url
-async function refreshSbsSports() {
+// force=true 时无条件去拉（启动首刷用）；否则仅当「还没有地址」或「剩余不足 SBS_AHEAD_MS」才拉
+async function refreshSbsSports(force) {
   if (sbsRefreshBusy) return;                                    // 已有刷新在跑 → 直接返回
+  if (!force && sbsTokenExp && sbsTokenExp - Date.now() > SBS_AHEAD_MS) return; // 余量充足，本轮不必拉
   sbsRefreshBusy = true;
   try {
     for (const src of SBS_SPORTS_SOURCES) {                      // 依次尝试每个镜像
@@ -224,6 +227,9 @@ async function refreshSbsSports() {
         if (!url || !/tvlive\.sbs\.co\.kr/.test(url)) continue;   // 地址不符合预期 → 换下一个镜像
         const exp = tokenExpOf(url);                             // 取 token 过期时间
         if (exp && exp <= Date.now()) continue;                  // token 已过期（镜像缓存旧版）→ 换下一个
+        if (exp && sbsTokenExp && exp <= sbsTokenExp) {          // 拿到的并不比手上新（上游还没整点换批）
+          return;                                                // 保留现状，等下一轮体检再试，避免无谓改写
+        }
         const target = CHANNELS.find((c) => c.id === SBS_SPORTS_ID);
         if (target) target.url = url;                            // 原地更新，/api/channels 与 /api/check 自动生效
         sbsTokenExp = exp;
@@ -231,13 +237,13 @@ async function refreshSbsSports() {
         return;
       } catch (e) { /* 该镜像不通就静默试下一个 */ }
     }
-    console.warn("[sbs-sports] 全部镜像均未取到新 token，保留当前地址");
+    console.warn("[sbs-sports] 全部镜像均未取到更新 token，保留当前地址");
   } finally {
     sbsRefreshBusy = false;
   }
 }
-refreshSbsSports();                                     // 启动时立即刷一次，避免首屏拿到无 token 的占位地址
-setInterval(refreshSbsSports, SBS_REFRESH_MS).unref();  // 之后每 15 分钟一次；unref 让定时器不阻止进程退出
+refreshSbsSports(true);                                 // 启动时强制刷一次，避免首屏拿到无 token 的占位地址
+setInterval(() => refreshSbsSports(false), SBS_CHECK_MS).unref(); // 每 5 分钟体检一次，按剩余时间决定是否真拉；unref 不阻止进程退出
 
 // 每个频道的节目单标题池（用于动态生成 EPG）
 const EPG_TITLES = {
