@@ -14,12 +14,12 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.26"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.27"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 
 // 往期回放站地址（前端「回放」模式的默认地址）。
 // 因该地址可能经常变动：前端页面内可随时覆盖（存浏览器 localStorage），无需改代码/重新部署；
 // 此处仅作默认值，改这里需重新部署才生效。
-const REPLAY_URL = "https://www.dodotv20.com/show.php?tid=3&order_type=";
+const REPLAY_URL = "https://dodotv22.com/show.php?tid=3&order_type="; // 回放站主域会定期更换（dodotv20→dodotv22，详见 HISTORY）；改这里后重启后端即生效，embed 白名单/Referer 自动跟随
 
 // —— 中继代理复用 TCP/TLS 连接（keep-alive）：默认每个分片都新建连接，远距离 CDN 建连开销大、易卡顿；
 // 复用连接后分段拉取延迟显著下降。rejectUnauthorized:false 仅用于本地中继demo，放宽对部分 CDN 证书链的校验以提高可达性。

@@ -911,3 +911,24 @@ YTN 在列表里的源是 `http://202.60.106.14:8080/214/playlist.m3u8`（iptv-o
 
 ## v0.1.0 — 2026-10-11 19:xx
 - 初版后端：频道列表 `/api/channels`、节目单 `/api/epg`、健康检测 `/api/check`、静态托管 `web/`。
+
+## v0.3.27 — 2026-11-06
+
+### 需求
+- 回放源站再次更换主域：`dodotv20.com` → `dodotv22.com`（该站周期性改域名，初版已说明「地址可能经常变」）。用户实测旧域名已 404，线上回放功能中断。
+
+### 改动
+- `backend/server.js`：`REPLAY_URL` 由 `https://www.dodotv20.com/show.php?tid=3&order_type=` 改为 `https://dodotv22.com/show.php?tid=3&order_type=`（末尾无 `www.`，与新站一致）。
+- embed 白名单 `allowHost` 由 `REPLAY_URL` 动态提取（server.js:656），故**仅改一处**即同步刷新白名单与 Referer，无需改白名单数组。
+- 同步更新两处硬编码旧域名的验证工具：`tools/verify_live_playback.js`（embed 流量匹配 `dodotv20`→`dodotv22`）、`tools/e2e_player_page.html`（临时 e2e 页 src 改指向 dodotv22 入口）。
+- 版本 `0.3.26 → 0.3.27`。
+
+### 实测验证（本地起 server.js，非线上）
+- `/api/config` 返回 `replayUrl` 已是 dodotv22.com ✓
+- `/api/embed?url=<dodotv22>` → **HTTP 200，返回 91,923 字节页面**（源站真实可达且能播）✓
+- `/api/embed?url=<旧 dodotv20>` → **HTTP 403**（旧域名被正确拒，白名单严格）✓
+- ⚠️ 本地验证仅证明代码逻辑正确 + 源站可达；**线上仍需重新部署后端**（`tvlive-relay.app.workbuddy.host`）才能对 App 端生效。网页版可用页面内「回放地址」输入框 + localStorage 覆盖先救急（无需重部署）。
+
+### 已知 / 待办
+- 回放站域名会周期变更，下次更换仍需改 `REPLAY_URL` 并重部署（或网页版就地覆盖）。
+- **建议**：给 Android App 端（tvlive-android）也加「回放地址手动覆盖」入口，对齐网页版 `app.js` 的 localStorage 机制，下次换链接无需动后端/重部署。

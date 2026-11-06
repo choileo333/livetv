@@ -112,7 +112,7 @@ const log = (...a) => console.log(...a);
   log("[2] 切换后帧结构"); const f2 = await dumpFrames("2");
 
   // ── 步骤 3：在回放 iframe 里点进一个视频 ────────────────
-  const targets = f2.filter((f) => f.url.includes("/api/embed") && f.url.includes("dodotv20"));
+  const targets = f2.filter((f) => f.url.includes("/api/embed") && f.url.includes("dodotv22"));
   log("[3] 回放站帧数=" + targets.length);
   if (!targets.length) { log("!! 回放站未加载"); }
 
