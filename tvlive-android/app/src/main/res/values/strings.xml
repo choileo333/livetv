@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 应用内的字符串资源（集中管理，便于日后多语言） -->
+<resources>
+    <string name="app_name">TvLive 直播</string>
+</resources>

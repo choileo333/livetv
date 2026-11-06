@@ -1,0 +1,73 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// app 模块构建脚本
+// 本模块即「TvLive」应用本体：直播（走自建中继）+ 回放（内嵌网页）+ 收藏，
+// 同一份 APK 同时支持手机（触屏、竖屏）与电视/盒子（遥控器、横屏）。
+// ─────────────────────────────────────────────────────────────────────────────
+plugins {
+    id 'com.android.application'       // 应用本模块为 Android 应用
+    id 'org.jetbrains.kotlin.android'  // 启用 Kotlin 编译
+}
+
+android {
+    namespace 'com.leo.tvlive'   // 代码命名空间（R 类包名）
+    compileSdk 34                // 编译所用 SDK：本机已装 platform-34
+
+    defaultConfig {
+        applicationId "com.leo.tvlive"  // 应用唯一 ID（与 doubao 工程完全不同，可并存安装）
+        minSdk 21                        // 最低支持 Android 5.0：覆盖老旧电视盒子
+        targetSdk 34                     // 目标 SDK
+        versionCode 12                     // 内部版本号（每次发版递增）
+        versionName "1.4.4"                // 展示版本号（同时显示在 App 界面上）
+    }
+
+    buildTypes {
+        debug {
+            // 调试包：保留默认配置，便于直接安装到设备
+        }
+        release {
+            minifyEnabled false   // 首版关闭混淆，便于排查问题；稳定后再开启
+            // 混淆规则文件（当前为空规则，仅保留占位以免构建脚本报错）
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8   // Java 源码兼容级别
+        targetCompatibility JavaVersion.VERSION_1_8   // 生成字节码兼容级别
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'   // Kotlin 编译目标字节码版本，与上面保持一致
+    }
+
+    buildFeatures {
+        buildConfig true   // 生成 BuildConfig（用于在代码里读取版本号等信息）
+    }
+
+    packagingOptions {
+        resources {
+            // 排除一些库自带的重复元数据文件，避免打包报冲突
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE*', 'META-INF/NOTICE*']
+        }
+    }
+}
+
+dependencies {
+    // androidx 基础库
+    implementation 'androidx.core:core-ktx:1.12.0'          // Kotlin 扩展
+    implementation 'androidx.appcompat:appcompat:1.6.1'     // 兼容包（AppCompatActivity）
+    implementation 'androidx.recyclerview:recyclerview:1.3.2' // 频道列表控件
+
+    // 播放内核：Media3 / ExoPlayer（Apache-2.0 开源），用于直播 HLS 播放
+    implementation 'androidx.media3:media3-exoplayer:1.2.0'      // 播放器核心
+    implementation 'androidx.media3:media3-exoplayer-hls:1.2.0'  // HLS(m3u8) 支持
+    implementation 'androidx.media3:media3-ui:1.2.0'             // PlayerView 播放控件
+
+    // 说明：回放部分不使用额外依赖，直接用系统 WebView 加载后端的内嵌代理页面
+    //      （即网站版 v0.3.13 已验证可播的那套方案），零额外风险。
+
+    // ── 单元测试（纯 JVM 运行，不需要模拟器或真机）────────────────────────
+    testImplementation 'junit:junit:4.13.2'
+    // 真实 org.json 实现：Android 自带的 org.json 在 JVM 单测中只是空壳（调用会抛 Stub!），
+    // 必须为测试单独引入完整实现，才能真实验证频道 JSON 的解析逻辑
+    testImplementation 'org.json:json:20231013'
+}

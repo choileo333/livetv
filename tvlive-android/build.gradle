@@ -1,0 +1,10 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// 根构建脚本
+// 只负责声明「用哪些插件、什么版本」；apply false 表示此处不直接应用，
+// 由 app 模块在自己的 build.gradle 里应用。
+// 版本选择依据：本机 Gradle 为 8.2，原生匹配 AGP 8.2.0；Kotlin 1.9.0 与 AGP 8.2 兼容。
+// ─────────────────────────────────────────────────────────────────────────────
+plugins {
+    id 'com.android.application' version '8.2.0' apply false       // Android 应用插件
+    id 'org.jetbrains.kotlin.android' version '1.9.0' apply false  // Kotlin 语言支持
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主题：全局无标题栏、深色底，适配手机与电视两种形态 -->
+<resources>
+    <style name="Theme.TvLive" parent="Theme.AppCompat.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>   <!-- 窗口底色 -->
+        <item name="colorPrimary">@color/accent</item>           <!-- 主题色 -->
+        <item name="colorAccent">@color/accent</item>            <!-- 控件强调色 -->
+        <item name="android:textColorPrimary">@color/text</item> <!-- 主文字色 -->
+    </style>
+</resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 电视端横幅图（Android TV 启动器要求 320x180 比例的 banner） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <!-- 背景 -->
+    <path
+        android:fillColor="#0F1115"
+        android:pathData="M0,0 L320,0 L320,180 L0,180 Z" />
+    <!-- 左侧红色播放标记 -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M24,70 L64,90 L24,110 Z" />
+    <!-- 品牌色横条 -->
+    <path
+        android:fillColor="#252A34"
+        android:pathData="M80,80 L280,80 L280,100 L80,100 Z" />
+</vector>

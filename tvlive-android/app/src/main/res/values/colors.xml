@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 配色表：深色底 + 高对比文字，兼顾电视远距离观看与手机夜间使用 -->
+<resources>
+    <color name="bg">#0F1115</color>        <!-- 整体背景（近黑） -->
+    <color name="panel">#171A21</color>     <!-- 面板/列表背景 -->
+    <color name="panel_hi">#252A34</color>  <!-- 选中/聚焦高亮 -->
+    <color name="accent">#E53935</color>    <!-- 主题强调色（红） -->
+    <color name="text">#FFFFFF</color>      <!-- 主文字 -->
+    <color name="text_dim">#9AA0A6</color>  <!-- 次要文字 -->
+    <color name="divider">#2A2F3A</color>   <!-- 分隔线 -->
+</resources>

@@ -1,0 +1,25 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// Gradle 工程设置
+// 作用：告诉 Gradle「插件去哪下、依赖去哪下、本工程包含哪些模块」。
+// 说明：单模块 Android 应用工程；全部代码为本项目自有，不依赖任何第三方受保护 SDK。
+// ─────────────────────────────────────────────────────────────────────────────
+
+pluginManagement {
+    repositories {
+        google()               // Android Gradle Plugin 与 androidx 系列依赖的官方仓库
+        mavenCentral()         // Kotlin 编译器及通用开源库仓库
+        gradlePluginPortal()   // Gradle 官方插件门户（兜底，防止某个插件只在这里有）
+    }
+}
+
+dependencyResolutionManagement {
+    // 只允许使用此处声明的仓库，防止子模块私自添加来源不明的仓库
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "TvLive"   // 工程名（Android Studio 标题栏显示用）
+include ':app'                // 声明本工程包含 app 模块

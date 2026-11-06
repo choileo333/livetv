@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  频道项的三种状态背景：
+    · 聚焦（电视遥控器选中）→ 亮底色 + 2dp 白色细边框，让用户一眼看到光标停在哪一行
+    · 按下（手机点按）      → 中等亮度
+    · 默认                 → 面板底色
+  说明：边框用白色而不是主题红 —— 白框在深灰底上更清晰，也不会与其它红色元素混淆。
+        （用户真机反馈「看不出现在选的是哪里」，故加了这圈细边框。）
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/panel_hi" />
+            <stroke android:width="2dp" android:color="#FFFFFF" />
+            <corners android:radius="4dp" />
+        </shape>
+    </item>
+
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/panel_hi" />
+        </shape>
+    </item>
+
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/panel" />
+        </shape>
+    </item>
+
+</selector>

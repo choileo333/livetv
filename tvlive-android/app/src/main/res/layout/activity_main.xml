@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  手机（竖屏）布局：单栏 + 页面级切换
+    · 列表页（panel_list）：顶栏 + 直播/回放切换 + 分组筛选 + 频道列表
+    · 播放页（panel_player）：返回栏 + 播放区（直播用 PlayerView，回放用 WebView）
+  说明：本布局与 layout-land/activity_main.xml 的所有控件 id 完全一致，
+       代码里用同一套 findViewById，仅按「是否电视」决定页面如何切换。
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg">
+
+    <!-- ══════════ 列表页 ══════════ -->
+    <LinearLayout
+        android:id="@+id/panel_list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- 顶栏：应用名 + 后端设置入口 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@color/panel"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp">
+
+            <TextView
+                android:id="@+id/tv_app_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/app_name"
+                android:textColor="@color/text"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <!-- 后端地址设置（点击弹窗修改，改完立即生效，无需重装） -->
+            <TextView
+                android:id="@+id/btn_backend"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@color/panel_hi"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:nextFocusDown="@id/tab_live"
+                android:paddingStart="12dp"
+                android:paddingTop="7dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="7dp"
+                android:text="后端设置"
+                android:textColor="@color/text_dim"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- 直播 / 回放 切换 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tab_live"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:nextFocusUp="@id/btn_backend"
+                android:gravity="center"
+                android:text="直播"
+                android:textColor="@color/text"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tab_replay"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:nextFocusUp="@id/btn_backend"
+                android:gravity="center"
+                android:text="回放"
+                android:textColor="@color/text"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <!-- 分组筛选条（运行时代码动态生成按钮） -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/panel"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/group_container"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp" />
+        </HorizontalScrollView>
+
+        <!-- 状态提示行（加载中 / 共多少台 / 错误原因） -->
+        <TextView
+            android:id="@+id/tv_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="16dp"
+            android:paddingBottom="8dp"
+            android:text="正在加载频道…"
+            android:textColor="@color/text_dim"
+            android:textSize="12sp" />
+
+        <!-- 频道列表 -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_channels"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingBottom="8dp" />
+    </LinearLayout>
+
+    <!-- ══════════ 播放页 ══════════ -->
+    <LinearLayout
+        android:id="@+id/panel_player"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <!-- 播放页顶栏：返回 + 当前频道名 + 收藏 + 重载（进入全屏时整条隐藏） -->
+        <LinearLayout
+            android:id="@+id/player_topbar"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:background="@color/panel"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp">
+
+            <TextView
+                android:id="@+id/btn_player_back"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:text="← 返回"
+                android:textColor="@color/text"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/tv_now_playing"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="middle"
+                android:singleLine="true"
+                android:text=""
+                android:textColor="@color/text"
+                android:textSize="15sp" />
+
+            <TextView
+                android:id="@+id/btn_fav"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:text="☆"
+                android:textColor="#FFD24A"
+                android:textSize="20sp" />
+
+            <TextView
+                android:id="@+id/btn_reload"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:gravity="center"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:text="⟳"
+                android:textColor="@color/text_dim"
+                android:textSize="18sp" />
+        </LinearLayout>
+
+        <!-- 播放区：直播用 PlayerView，回放用 WebView，二者互斥显示 -->
+        <FrameLayout
+            android:id="@+id/player_host"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#000000">
+
+            <!-- 直播画面。
+                 刻意关掉 Media3 自带的控制器（app:use_controller="false"），原因有三：
+                   ① 它内置没有「全屏」按钮 —— 用户真机实测反馈「找不到全屏」；
+                   ② 直播流不可拖动，进度条会被它自动隐藏，只剩一个孤零零的「速度」按钮，
+                      看起来就像「下面被去掉了」；
+                   ③ 它的按钮在触摸模式下无法被遥控器聚焦。
+                 改用下方自绘控制条：按钮可被遥控器选中，聚焦时有细边框提示。 -->
+            <androidx.media3.ui.PlayerView
+                android:id="@+id/player_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                app:show_buffering="always"
+                app:use_controller="false" />
+
+            <WebView
+                android:id="@+id/webview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:visibility="gone" />
+
+            <!-- 自绘控制条：只留一个「全屏 / 退出全屏」
+                 （v1.1.0：真机反馈「全屏好用，旁边的静音、暂停不要了」，故精简到只剩全屏。）
+                 遥控器可选中，聚焦时显示细边框 -->
+            <LinearLayout
+                android:id="@+id/live_controls"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_marginEnd="16dp"
+                android:layout_marginBottom="16dp"
+                android:background="#B3000000"
+                android:orientation="horizontal"
+                android:paddingStart="4dp"
+                android:paddingTop="4dp"
+                android:paddingEnd="4dp"
+                android:paddingBottom="4dp">
+
+                <TextView
+                    android:id="@+id/btn_ctrl_full"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:focusable="true"
+                    android:focusableInTouchMode="true"
+                    android:paddingStart="16dp"
+                    android:paddingTop="8dp"
+                    android:paddingEnd="16dp"
+                    android:paddingBottom="8dp"
+                    android:text="全屏"
+                    android:textColor="@color/text"
+                    android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- 回放模式操作提示：进了网页若不给提示，用户根本不知道遥控器能干什么。
+                 v1.1.0 起回放页改用「红点光标 + 鼠标隐喻」，且长按确定键可切全屏，
+                 故提示文案同步改为解释这套操作。 -->
+            <TextView
+                android:id="@+id/tv_replay_hint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|center_horizontal"
+                android:layout_marginTop="12dp"
+                android:background="#CC000000"
+                android:paddingStart="14dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="14dp"
+                android:paddingBottom="6dp"
+                android:text="方向键移红点（贴边滚动）· 确定=点击 · 长按确定=全屏 · 返回=后退/回直播"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:visibility="gone" />
+        </FrameLayout>
+    </LinearLayout>
+
+    <!-- ══════════ 网页全屏容器 ══════════
+         回放网页里的 <video> 请求全屏时，把系统给的自定义视图挂到这里，实现真正全屏 -->
+    <FrameLayout
+        android:id="@+id/fullscreen_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#000000"
+        android:visibility="gone" />
+
+</FrameLayout>
