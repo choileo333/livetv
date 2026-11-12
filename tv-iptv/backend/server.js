@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.29"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.30"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 // 托管平台网关访问码（v0.3.28）：平台对线上链接加 sharecode 校验——每个请求必须带
 // ?sharecode=... 或携带首访时下发的 __wb_rsc cookie，否则网关直接拦「链接不完整」(403)。
 // 浏览器首次打开带码链接后有 cookie，后续请求都放行；但安卓原生播放器(ExoPlayer)不管理 cookie，
@@ -163,6 +163,17 @@ const CHANNELS = [
   {"id": 169, "name": "여수MBC", "url": "https://5c3639aa99149.streamlock.net/live_TV/tv/playlist.m3u8", "logo": "https://i.imgur.com/3VSuYsn.png", "group": "韩国", "relay": false, "note": "MBC 丽水放送局（全罗南道东部）· v0.3.22 新增。呼号 HLAT-DTV，1987 开播。v0.3.24 起 relay:false=安卓端家宽直连韩国（绕开慢云端）；网页端仍强制走中继。云端实测仅~0.45Mbps偏慢（[Not 24/7]，深夜可能无信号）"},
   {"id": 170, "name": "강원도 MBC", "url": "http://123.254.93.7:1935/tvlive/livestream2/playlist.m3u8", "logo": "https://i.imgur.com/FGsKCH3.png", "group": "韩国", "relay": false, "note": "MBC 江原道地方台（呼号 HLAQ-DTV，实际为三陟/岭东放送局）· v0.3.22 新增。v0.3.24 起 relay:false=安卓端家宽直连韩国（绕开慢云端）；网页端仍强制走中继。云端实测仅~0.58Mbps偏慢（[Not 24/7]，深夜可能无信号）"},
   {"id": 171, "name": "전라북도 MBC", "url": "http://61.85.197.53:1935/jtv_live/myStream/playlist.m3u8", "logo": "https://i.imgur.com/byss0Ld.png", "group": "韩国", "relay": false, "note": "MBC 全北地方台（呼号 HLDQ-DTV，即全州 MBC / JTV）· v0.3.22 新增。v0.3.24 起 relay:false=安卓端家宽直连韩国（绕开慢云端）；网页端仍强制走中继。云端实测仅~0.28Mbps偏慢（[Not 24/7]，深夜可能无信号）"},
+  // —— KBS 全球 CDN 台组 7 个 · v0.3.30 新增（为长辈观看体验专门引入）——
+  // 源站 gscdn.kbs.co.kr = KBS 官方 CloudFront 全球 CDN，晚高峰（19~20点）实测 1.6~2.7Mbps，
+  // 同窗口下其它韩源（韩国本地机房）仅 0.1~0.5Mbps → 本组是晚高峰唯一流畅梯队。
+  // 地址为 CloudFront 签名 URL（Policy 过期约 42 小时），由 refreshKbsGscdn() 从同一份 koreatv.json 镜像定期续签（见下方）。
+  {"id": 172, "name": "KBS WORLD", "url": "https://world.gscdn.kbs.co.kr/world-01/world-01_sd.m3u8?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly93b3JsZC5nc2Nkbi5rYnMuY28ua3Ivd29ybGQtMDEvKiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5NDYzNTk2OH19fV19&Key-Pair-Id=APKAICDSGT3Y7IXGJ3TA&Signature=M0XE6kImGL386j0afd~XTXQWkuHUk2BvdAQACpeTgClnK5K6N6BnjiapAZC6E8q2zOyornSEI7oGYz4HITjOQ0QyEsa5obkaT5YDHBCQX4j-Y~1yVDJ1hYeBSCc3cMI4CC32hCJlD2K46MjH8VJNmexrNSHKbB53kLChqFlPjRE4HWuki9LVOKSY22Oogic5nPSWl4FGkwOS-KsKDfETdLOmhP0r~oMafk03YMIkJtRWgWNToxbsBWJV4C~JQORpna0QyHwMsaSbmfS8ksSsCpCblVUYJa2ySgMeWLAuVaa-8Qx5OiH2ldUFV1z34aJGY0CLL7Ad88F6RUF8n032uQ__", "logo": "https://backup.760515.xyz/logo/KBS%20WORLD.png", "group": "韩国", "note": "KBS 官方国际频道（面向海外播出：韩流综艺/音乐/新闻，无地域封锁）· v0.3.30 新增。全球 CloudFront CDN，晚高峰实测 2.1Mbps 流畅。签名 URL 42h 过期自动续签"},
+  {"id": 173, "name": "KBS N DRAMA", "url": "https://kbsndrama.gscdn.kbs.co.kr/kbsndrama-01/kbsndrama-01_sd.m3u8?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9rYnNuZHJhbWEuZ3NjZG4ua2JzLmNvLmtyL2tic25kcmFtYS0wMS8qIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNzk0NjM1OTUwfX19XX0_&Key-Pair-Id=APKAICDSGT3Y7IXGJ3TA&Signature=j4-pmVXLdy2afWVZ2OUE3k6c0DCcYX4KmtRB7zq0pw6kw3zwh-4wuR3f0uQ8Mufy8QucY-jrsGi2t7z4v-4YnLpHeYk~7WU0MeiA2sRdT1qjvbXbg3BNYzzYPBREHfSaJsfgpMdRV~VpZ-SdtShRAD1G4BqivI0MpnxBLIIfzh~EyzR6P37PNhnIxC5KaCMcxliONjznpGFHqyh9xIlkXGS9yFBY91l0A1XXvkeVwT48S2cdWRLNHW6LR~O7t-2NAJk2Ti-IA5W~8zRMKCDaHAT5RrnIxkLV62eKD8DHA~yjWlZrmiKv77O4DMR78ChcBCiusaNZt6~-UkmpUKBv7Q__", "logo": "https://backup.760515.xyz/logo/KBS드라마.png", "group": "韩国", "note": "KBS Drama 韩剧台（有线 KBS N 系列：韩剧连播/名作重播）· v0.3.30 新增。全球 CDN 晚高峰实测 2.5Mbps 流畅，适合长辈追剧。签名 URL 42h 过期自动续签"},
+  {"id": 174, "name": "KBS Joy", "url": "https://kbsnjoy.gscdn.kbs.co.kr/kbsnjoy-02/kbsnjoy-02_sd.m3u8?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9rYnNuam95LmdzY2RuLmticy5jby5rci9rYnNuam95LTAyLyoiLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3OTQ2MzYwMTJ9fX1dfQ__&Key-Pair-Id=APKAICDSGT3Y7IXGJ3TA&Signature=eT28dpsjQ72e1BViPpkOMTpImmwY716KvGD109K1JO9gxoMph0U5Wvcm6fAHs1LjyBEvfsNpGSoFRNiFNTWYwEgPumvKeZsm9Sxt2LUCQZaeXw8iwFIyPUWVhg1UFTTiuTyGNUXOUHHmOC2E5AglOHfV7LKTzngDIubrQAYwA8dL5a3RwxIZ9iUT3V6s1FpT1NxjMNYhQn-v5AnAGjHqxZp7RVTtC9RpzHa8T4V-iNrbtIsC71haOMtpUH8S0ZzgUvP2kanPvo0vLoDO4~f34r2cIxYec~sDUqh9mhHi4GwK5KTgYDJFfxyrBrbPJ08aNwaEbiSdUe5HgISUbkKz6g__", "logo": "https://backup.760515.xyz/logo/KBS조이.png", "group": "韩国", "note": "KBS Joy 综艺台（经典综艺/喜剧重播）· v0.3.30 新增。全球 CDN 晚高峰实测 2.5Mbps 流畅。签名 URL 42h 过期自动续签"},
+  {"id": 175, "name": "KBS키즈", "url": "https://kbsnkids.gscdn.kbs.co.kr/kbsnkids-01/kbsnkids-01_sd.m3u8?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9rYnNua2lkcy5nc2Nkbi5rYnMuY28ua3Iva2JzbmtpZHMtMDEvKiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5NDYzNTk1Mn19fV19&Key-Pair-Id=APKAICDSGT3Y7IXGJ3TA&Signature=hAozGvfhYKKD50gAoBLBmDklHIILjSzq1b4TaNtZhYgeTlWApO4gXjm6uYUSjIVSC5pCZTDOyzqxnJlwsijMhDGx8--YtcUpv4twz03mv8KmCAgNO0O6~F2y2-3DbukXeEPVGMa3rjLZ9HlPBF~yjkfST9bz---NzTKDHJYkAEUY1fDnjMwW0xnTPkwnqxd1UShOIjjUebGHd41jMF8jB2Ezo5Ji3tsuPH6JSyZLiWS~UH-4NaTPhPslJ5NUZPe4QjfwrqFF2gd7yPPWH65PGrUFBrHWOJbqDeiDNyVzI8DEwnZUP49J5wyTrvnELKLRR3Rqe3KIZOSCl5LGbCUjHQ__", "logo": "https://backup.760515.xyz/logo/KBS키즈.png", "group": "韩国", "note": "KBS Kids 儿童台（动画/儿童节目）· v0.3.30 新增。全球 CDN 晚高峰实测 2.2Mbps 流畅。签名 URL 42h 过期自动续签"},
+  {"id": 176, "name": "KBS LIFE", "url": "https://kbsnlife.gscdn.kbs.co.kr/kbsnlife-01/kbsnlife-01_sd.m3u8?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9rYnNubGlmZS5nc2Nkbi5rYnMuY28ua3Iva2JzbmxpZmUtMDEvKiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5NDYzNTk0NX19fV19&Key-Pair-Id=APKAICDSGT3Y7IXGJ3TA&Signature=ZmXWqCmtZl1DcTYgsXj0DswY-9W5n~ppsUlQfbFWutuKnrI7EYerisf1aIOtsYF4B0J1~cLEqr3ZtSEDIYHhlOFheWgaiV~5CC0JEXFt5j94Afk66QARFhjlts9DnmGeYHqJ51ejlBS0KzZaeZtykShCijnTana2qFp3Tory89fkG6wAF4zvHXMkd4WiOcXitAEKdHW2VtDl917RgqzB7ws4hpaE-HgpzPP54iLvjCovBNfC0Rt4XqfK6l9qo8FWHrkxKq1rxpIAilrxUVgjHO6fjiGqhFmmHxtC1hS88vF4HKHIwV7DVM2wu4FpaYfNQg7qIj7NutXTeVHrQFrWRA__", "logo": "https://backup.760515.xyz/logo/KBS%20LIFE.png", "group": "韩国", "note": "KBS Life 生活文化台（生活/美食/纪录片类）· v0.3.30 新增。全球 CDN 晚高峰实测 1.6Mbps 流畅。签名 URL 42h 过期自动续签"},
+  {"id": 177, "name": "KBS Story", "url": "https://kbsnw.gscdn.kbs.co.kr/kbsnw-01/kbsnw-01_sd.m3u8?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9rYnNudy5nc2Nkbi5rYnMuY28ua3Iva2JzbnctMDEvKiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5NDYzNTk0MX19fV19&Key-Pair-Id=APKAICDSGT3Y7IXGJ3TA&Signature=VrFvPQ6E3TSOfrnDtZ~xUHTqrc7nelHBucNdMOgTPXobFmA-n7aaHMITijGo4Q5HRCnDnsHAM9AW15TmbHL3g4XLrOMBlvJgBzmYLPPnv33Bz70KHXqleE~a40lYvltredM5R6nvg~mGNCrXkjqIXS82mIdwqUW-Pa8Yv7mjXxSa3LBkAG2uRXXbU8i-n7swk0Jg-Y~cUYWlgk5Yh1AHzVcLkp0K4tJJEU9z1d06mrhxaDUB9osFtTsHAuU~bME3Z2pBCMZkdMhOo5psvluJMVzrJhEjFXWyi308uN1TOQ9ajn2gFKTEBgatmrYwYl6VgPNRpfCYMGk96A-L~4TcJQ__", "logo": "", "group": "韩国", "note": "KBS Story（怀旧经典剧集/老节目重播，中老年观众友好）· v0.3.30 新增。全球 CDN 晚高峰实测 1.6Mbps 流畅。签名 URL 42h 过期自动续签"},
+  {"id": 178, "name": "KBS뉴스 24", "url": "https://news24.gscdn.kbs.co.kr/news24-02/news24-02_hd.m3u8?Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9uZXdzMjQuZ3NjZG4ua2JzLmNvLmtyL25ld3MyNC0wMi8qIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNzk0NjM1OTM4fX19XX0_&Key-Pair-Id=APKAICDSGT3Y7IXGJ3TA&Signature=QrBTQjpZUEWiClcyE4JP-z6ZNYleDNvmRMkhYt5LIBm7~S~U-J-vszJl6vGcfZPJpUl2FOA9v8zM45FHrp8fgoq~DPkENMUFxw~A8D3aXkjZvHlxuKamAfz5hwJNnNeL5FAmwPgq9NxFJB5QMSeCKa6zy3ympsYG7no77hwAzE3atgj3zinbckamWGyLWwlFRffhUTBTxENJLMHsMyhEJupn-mZWra94pBsnLFV2N9lA6ik1stzlUlpDyHV4RQ~~n9A5vIIkM9PW3N9Ni6rl9kLkVCAsw99EXVW6xl86meu1dFAoJGDXauIqYOM~kHdQuSsYvt5qWvS7ZBv7OqYzMQ__", "logo": "", "group": "韩国", "note": "KBS News 24 新闻台（24小时韩国新闻，HD 源）· v0.3.30 新增。全球 CDN 晚高峰实测 2.7Mbps 流畅。签名 URL 42h 过期自动续签"},
 ];
 
 // ============ SBS Sports 动态 token 自动刷新（v0.3.21 新增）============
@@ -268,6 +279,79 @@ async function refreshSbsSports(force) {
 refreshSbsSports(true);                                 // 启动时强制刷一次，避免首屏拿到无 token 的占位地址
 setInterval(() => refreshSbsSports(false), SBS_CHECK_MS).unref(); // 每 5 分钟体检一次，按剩余时间决定是否真拉；unref 不阻止进程退出
 
+// —— KBS 全球 CDN 台组（gscdn.kbs.co.kr）签名 URL 自动续签 · v0.3.30 ——
+// 这批台的地址是 CloudFront 签名 URL（Policy 里 AWS:EpochTime 过期，约 42 小时），
+// 与 SBS token 一样依赖同一份 koreatv.json 镜像清单（维护者会持续更新签名），
+// 过期后播放会 403，因此用与 refreshSbsSports 相同的模式定期续签。
+const KBS_CHECK_MS = 30 * 60 * 1000;   // 每 30 分钟体检一次（签名余量大，无需像 SBS 2h token 那样频繁）
+const KBS_AHEAD_MS = 6 * 60 * 60 * 1000; // 剩余不足 6 小时才真正去拉（省请求；拉一次全组共用同一批签名）
+const KBS_GSCDN_TARGETS = [            // 我们的后端频道 id ↔ koreatv.json 里的台名（精确匹配）
+  { id: 172, mirrorName: "KBS WORLD" },
+  { id: 173, mirrorName: "KBS드라마" },
+  { id: 174, mirrorName: "KBS조이" },
+  { id: 175, mirrorName: "KBS키즈" },
+  { id: 176, mirrorName: "KBS LIFE" },
+  { id: 177, mirrorName: "KBS Story" },
+  { id: 178, mirrorName: "KBS뉴스" },
+];
+const kbsTokenExps = {};               // 各频道当前签名 URL 的过期时间戳（毫秒），0 = 未知
+let kbsRefreshBusy = false;            // 防重入：一轮刷新未结束时不叠加新一轮
+
+// CloudFront 签名过期时间：解析 query 里 Policy（base64 JSON）→ Statement[0].Condition.DateLessThan."AWS:EpochTime"（秒）
+function cfExpOf(url) {
+  try {
+    const policy = new URL(url).searchParams.get("Policy");     // 取 Policy 参数
+    if (!policy) return 0;
+    const j = JSON.parse(Buffer.from(policy.replace(/-/g, "+").replace(/_/g, "~"), "base64").toString("utf8")); // URL-safe base64 解码
+    const sec = j.Statement && j.Statement[0] && j.Statement[0].Condition && j.Statement[0].Condition.DateLessThan && j.Statement[0].Condition.DateLessThan["AWS:EpochTime"];
+    return (sec || 0) * 1000;                                   // 秒 → 毫秒
+  } catch (e) { return 0; }
+}
+
+// 拉一轮最新签名地址；成功则原地改写对应频道 url。force=true 无条件拉（启动首刷）；否则签名余量充足就跳过
+async function refreshKbsGscdn(force) {
+  if (kbsRefreshBusy) return;                                   // 已有刷新在跑 → 直接返回
+  const exps = Object.values(kbsTokenExps).filter(Boolean);
+  const minExp = exps.length ? Math.min(...exps) : 0;           // 全组共批签名，取最早过期者做体检基准
+  if (!force && minExp && minExp - Date.now() > KBS_AHEAD_MS) return; // 余量充足 → 本轮不拉
+  kbsRefreshBusy = true;
+  try {
+    for (const src of SBS_SPORTS_SOURCES) {                     // 复用同一份镜像清单（按优先级尝试）
+      try {
+        const txt = await fetchTextOnce(src, 25000);            // 拉清单
+        const data = JSON.parse(txt);                           // 顶层是数组
+        const list = Array.isArray(data) ? data : (data && Object.values(data)[0]);
+        if (!Array.isArray(list)) continue;                     // 结构不符 → 换下一个镜像
+        let updatedAny = false;
+        for (const t of KBS_GSCDN_TARGETS) {                    // 逐台尝试更新
+          const ch = list.find((c) => c && typeof c.name === "string" && c.name.trim() === t.mirrorName);
+          const url = ch && Array.isArray(ch.uris) ? String(ch.uris[0] || "") : "";
+          if (!url || !/gscdn\.kbs\.co\.kr/.test(url)) continue; // 地址不符合预期 → 跳过该台
+          const exp = cfExpOf(url);                             // 取签名过期时间
+          if (exp && exp <= Date.now()) continue;               // 镜像缓存了过期签名 → 跳过
+          const cur = kbsTokenExps[t.id];
+          if (exp && cur && exp <= cur) continue;               // 拿到的并不比手上新 → 跳过
+          const target = CHANNELS.find((c) => c.id === t.id);
+          if (target) target.url = url;                         // 原地更新
+          kbsTokenExps[t.id] = exp;
+          updatedAny = true;
+        }
+        if (updatedAny) {
+          const ids = KBS_GSCDN_TARGETS.map((t) => t.id).join(",");
+          console.log("[kbs-gscdn] 已刷新 id=" + ids + "，最早过期于 " + (minExpsOf(kbsTokenExps) ? new Date(minExpsOf(kbsTokenExps)).toISOString() : "未知"));
+          return;                                               // 任一镜像成功即收手
+        }
+      } catch (e) { /* 该镜像不通就静默试下一个 */ }
+    }
+    console.warn("[kbs-gscdn] 全部镜像均未取到更新签名，保留当前地址");
+  } finally {
+    kbsRefreshBusy = false;
+  }
+}
+function minExpsOf(map) { const v = Object.values(map).filter(Boolean); return v.length ? Math.min(...v) : 0; }
+refreshKbsGscdn(true);                                          // 启动时强制刷一次（镜像若已更新则拿到最新签名）
+setInterval(() => refreshKbsGscdn(false), KBS_CHECK_MS).unref(); // 每 30 分钟体检一次
+
 // 每个频道的节目单标题池（用于动态生成 EPG）
 const EPG_TITLES = {
   6: ["测试 · Big Buck Bunny (MP4) · 直播", "测试 · Big Buck Bunny (MP4) · 精选", "测试 · Big Buck Bunny (MP4) · 热门", "测试 · Big Buck Bunny (MP4) · 回放"],
@@ -323,6 +407,13 @@ const EPG_TITLES = {
   169: ["여수MBC · 直播", "여수MBC · 精选", "여수MBC · 热门", "여수MBC · 回放"],
   170: ["강원도 MBC · 直播", "강원도 MBC · 精选", "강원도 MBC · 热门", "강원도 MBC · 回放"],
   171: ["전라북도 MBC · 直播", "전라북도 MBC · 精选", "전라북도 MBC · 热门", "전라북도 MBC · 回放"],
+  172: ["KBS WORLD · 直播", "KBS WORLD · 精选", "KBS WORLD · 热门", "KBS WORLD · 回放"],
+  173: ["KBS N DRAMA · 韩剧连播", "KBS N DRAMA · 名作重播", "KBS N DRAMA · 每日剧场的", "KBS N DRAMA · 周末特辑"],
+  174: ["KBS Joy · 综艺", "KBS Joy · 经典喜剧", "KBS Joy · 重播精选", "KBS Joy · 综艺热门"],
+  175: ["KBS키즈 · 动画", "KBS키즈 · 儿童剧场", "KBS키즈 · 益智节目", "KBS키즈 · 动画精选"],
+  176: ["KBS LIFE · 生活", "KBS LIFE · 美食", "KBS LIFE · 文化纪行", "KBS LIFE · 纪录片"],
+  177: ["KBS Story · 怀旧剧场", "KBS Story · 经典重播", "KBS Story · 老剧精选", "KBS Story · 回放"],
+  178: ["KBS뉴스 24 · 新闻", "KBS뉴스 24 · 时事", "KBS뉴스 24 · 快讯", "KBS뉴스 24 · 深夜新闻"],
 };
 
 // 根据当前时间动态生成某频道的 EPG（过去 1 档 + 现在 + 未来 3 档，每档 30 分钟）
