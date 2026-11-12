@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.28"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.29"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 // 托管平台网关访问码（v0.3.28）：平台对线上链接加 sharecode 校验——每个请求必须带
 // ?sharecode=... 或携带首访时下发的 __wb_rsc cookie，否则网关直接拦「链接不完整」(403)。
 // 浏览器首次打开带码链接后有 cookie，后续请求都放行；但安卓原生播放器(ExoPlayer)不管理 cookie，
@@ -438,7 +438,9 @@ async function checkDeep(url, timeoutMs) {
   const CAP = 600 * 1024; // 单分片最多读 600KB：韩国小地方台源站出口弱，1.5MB 样本在超时内下不完会误判 dead；小样本能在宽限时间内下完→走 kbps 兜底判定（慢=黄而非红）
   let u = url;
   for (let depth = 0; depth < 4; depth++) {
-    const r = await fetchSome(u, Math.min(timeoutMs, 3000), 4096); // 播放列表：最多 3s
+    let r = await fetchSome(u, Math.min(timeoutMs, 3000), 4096); // 播放列表：最多 3s
+    // v0.3.29：播放列表级超时/连接失败（status=-1）重试一次——晚高峰跨境握手 3s 不够很常见，一次失败≠源死
+    if (r.status === -1) r = await fetchSome(u, Math.min(timeoutMs, 5000), 4096);
     if (r.status !== 200) return { state: "dead", kbps: 0, reason: "http" + r.status };
     if (/\.mp4(\?.*)?$/i.test(u) || /video\/mp4/i.test(r.ct)) return { state: "ok", kbps: estKbps(r), reason: "mp4" };
     if (!/#EXTM3U/i.test(r.text)) return { state: "dead", kbps: 0, reason: "not-hls" };
@@ -469,15 +471,18 @@ async function checkDeep(url, timeoutMs) {
       }
       // next 即真实分片：实测下载
       const s = await fetchSome(abs, Math.min(timeoutMs, 12000), CAP); // 分片：最多 12s（配合 600KB 小样本，弱源站可在宽限内下完→准确判定 slow/ok 而非误判 dead）
-      if (s.status !== 200) return { state: "dead", kbps: 0, reason: "seg" + s.status };
       const kbps = estKbps(s);
-      if (s.reason === "timeout" && s.total < 200 * 1024) return { state: "dead", kbps, reason: "seg-timeout" };
+      // v0.3.29 判定口径修正：「dead」只留给拿不到任何数据的源（真死）；
+      // 有数据在流但慢的（晚高峰跨境拥塞常态）一律 slow，避免整片假红误导用户以为源挂了。
+      // 注意 fetchSome 超时/连接错误返回 status=-1，必须先于 status!==200 分支处理：
+      if (s.status === -1) return s.total > 0 ? { state: "slow", kbps, reason: "seg-partial" } : { state: "dead", kbps: 0, reason: "seg-timeout" };
+      if (s.status !== 200) return { state: "dead", kbps: 0, reason: "seg" + s.status };
       if (s.reason === "end" && segDur > 0) {
-        // ratio = 分片时长 ÷ 下载耗时（倍数，越大越快）：≥1.3 有富余=流畅；0.9~1.3 临界=偏慢；<0.9 下载慢于播放=跟不上
+        // ratio = 分片时长 ÷ 下载耗时（倍数，越大越快）：≥1.3 有富余=流畅；<1.3 跟不上实时=偏慢（能连，黄）
         const ratio = segDur / s.secs;
-        return { state: ratio >= 1.3 ? "ok" : ratio >= 0.9 ? "slow" : "dead", kbps, ratio: +ratio.toFixed(2) };
+        return { state: ratio >= 1.3 ? "ok" : "slow", kbps, ratio: +ratio.toFixed(2) };
       }
-      return { state: kbps >= 1200 ? "ok" : kbps >= 300 ? "slow" : "dead", kbps };
+      return { state: kbps >= 1200 ? "ok" : kbps >= 100 ? "slow" : "dead", kbps }; // 无 #EXTINF 时长兜底：<100kbps 连首帧都难出 → 算死；有基本吞吐 → 慢
     }
     u = abs; // 变体列表 → 继续跟下一层
   }
