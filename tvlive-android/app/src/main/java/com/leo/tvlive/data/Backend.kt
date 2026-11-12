@@ -16,8 +16,20 @@ object Backend {
     /** 默认后端地址：线上部署的实例（可在 App 界面里改成局域网自建地址） */
     const val DEFAULT_BASE = "https://tvlive-relay.app.workbuddy.host"
 
+    /**
+     * 托管平台网关访问码（v1.4.5）：平台对线上链接加了 sharecode 校验——每个请求必须带
+     * ?sharecode=... 或携带首访时下发的 __wb_rsc cookie，否则网关直接拦「链接不完整」(403)。
+     * App 的 OkHttp/播放器默认不管理 cookie，所以这里给每个接口 URL 统一追加访问码。
+     * ⚠️ 与后端 server.js 的 SHARE_CODE 必须保持一致；若日后重新部署导致平台换码，两处都要改。
+     */
+    const val SHARE_CODE = "CICKFPDYZQ"
+
     /** 去掉用户可能误输入的结尾斜杠，保证拼接结果不会出现 "//api" */
     private fun norm(base: String): String = base.trim().trimEnd('/')
+
+    /** 给接口路径追加访问码：已有查询串（含 ?）用 &，否则用 ? */
+    private fun withSc(path: String): String =
+        path + (if (path.contains("?")) "&sharecode=" else "?sharecode=") + SHARE_CODE
 
     /**
      * 对查询参数值做编码。
@@ -28,10 +40,10 @@ object Backend {
         URLEncoder.encode(s, "UTF-8").replace("+", "%20")
 
     /** 频道列表接口 */
-    fun channels(base: String): String = "${norm(base)}/api/channels"
+    fun channels(base: String): String = withSc("${norm(base)}/api/channels")
 
     /** 配置接口（返回版本号与回放站地址） */
-    fun config(base: String): String = "${norm(base)}/api/config"
+    fun config(base: String): String = withSc("${norm(base)}/api/config")
 
     /**
      * 中继播放接口（后端真实路径，已实测可用）。
@@ -39,11 +51,11 @@ object Backend {
      * 注意：URL 参数必须整体编码——原始流地址自带 ? 与 & 参数，不编码会破坏外层 URL 结构。
      */
     fun relay(base: String, rawUrl: String): String =
-        "${norm(base)}/api/relay?url=${enc(rawUrl)}"
+        withSc("${norm(base)}/api/relay?url=${enc(rawUrl)}") // withSc 会追加 &sharecode（relay 已带 ?url=）
 
     /** 内嵌代理接口：用于回放（服务端会补 Referer + 注入播放器补丁） */
     fun embed(base: String, target: String): String =
-        "${norm(base)}/api/embed?url=${enc(target)}"
+        withSc("${norm(base)}/api/embed?url=${enc(target)}") // 同上
 
     /**
      * 计算「实际拿去播放的地址」——**与网页版 `app.js` 的规则完全一致**。

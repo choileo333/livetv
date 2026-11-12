@@ -2,6 +2,35 @@
 
 > 按用户既定规范：每次改动记录「时间 + 改了什么 + 为什么」。文件名/程序内含版本号，原稿只读、新版本独立派生。
 
+## v0.3.28 — 2026-11-12 19:0x（修「网站/App 全打不开」：平台网关 sharecode 校验，子 URL 逐请求带码）
+
+### 1) 故障与根因（实测定位，非猜测）
+- 用户报告：网页端、移动端**全部打不开**。实测裸域名任意路径（含 `/api/health`）→ 平台网关返回 403
+  「链接不完整：链接缺少必要信息」HTML 页（请求根本到不了本后端）。
+- 根因：托管平台对线上链接启用了 **sharecode 访问码校验**——每个请求必须带 `?sharecode=...`
+  或携带首访带码时下发的 `__wb_rsc` cookie。浏览器带码首访后有 cookie 即恢复；但
+  ①安卓原生播放器（ExoPlayer）不管理 cookie；②播放列表里被本服务改写的变体/分片 URL 是**相对路径且不带码**，
+  后续请求仍会被网关 403。
+- 实测确认 sharecode **与应用绑定、重新部署不换码**（当天两次重部署码值均 `CICKFPDYZQ`），硬编码安全。
+
+### 2) 改动（后端 v0.3.28 + 安卓 v1.4.5 两端同步）
+- `server.js`：新增 `SHARE_CODE` 常量；`/api/relay` 播放列表改写时给变体/分片/密钥 URI 全部追加
+  `&sharecode=...`；回放注入脚本 `PLAYER_PATCH.fix()` 同样追加（模板串内用 `${SHARE_CODE}` 服务端插值，
+  不能写 `+ SHARE_CODE +`——浏览器里没有该变量）。`VERSION 0.3.27 → 0.3.28`。
+- 安卓 `Backend.kt`：新增 `SHARE_CODE`/`withSc()`，`channels/config/relay/embed` 四个构造器统一追加访问码
+  （详见 tvlive-android/HISTORY.md v1.4.5）。
+- 安卓夹具/单测顺带对齐：`CoreLogicTest` 两个断言停留在旧状态（59 台/含 id163，改动前就已失败），
+  已对齐 v0.3.28 现状（58 台、韩国 31 台新台号、relay:false=8 台）。
+
+### 3) 验证（全链路无 cookie 模拟播放器）
+- `master(带码) 200 → 改写变体 URL 已含 sharecode ✅ → 变体(无 cookie) 200 → 末段(无 cookie) 200 / 2.19MB 真实视频 ✅`。
+- 安卓纯 JVM 单测 16 项全部通过（含新增访问码专项断言）。
+- 线上 `/api/health?sharecode=CICKFPDYZQ` → `version: 0.3.28`，SBS token(140/167) 自动刷新正常。
+
+### 4) 使用变化
+- 网页端入口变为带码链接：`https://tvlive-relay.app.workbuddy.host/?sharecode=CICKFPDYZQ`。
+- 安卓端需更新到 v1.4.5 APK（旧版请求不带码会被网关拦）。
+
 ## v0.3.26 — 2026-10-21 22:5x（SBS 主台/MBC 换新源；SBS 主台接入 token 自动刷新；JTBC 换代理源但仍限韩）
 
 ### 1) 用户诉求

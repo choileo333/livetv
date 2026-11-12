@@ -34,7 +34,7 @@ class CoreLogicTest {
             "http://a.com/x.m3u8?t=1&n=2"
         )
         assertEquals(
-            "https://tvlive-relay.app.workbuddy.host/api/relay?url=http%3A%2F%2Fa.com%2Fx.m3u8%3Ft%3D1%26n%3D2",
+            "https://tvlive-relay.app.workbuddy.host/api/relay?url=http%3A%2F%2Fa.com%2Fx.m3u8%3Ft%3D1%26n%3D2&sharecode=CICKFPDYZQ",
             out
         )
     }
@@ -42,10 +42,21 @@ class CoreLogicTest {
     @Test
     fun base_url_with_trailing_slash_does_not_produce_double_slash() {
         // 用户手输后端地址时常带结尾斜杠，必须规范化，否则会拼出 "//api/channels"
-        assertEquals("https://x.com/api/channels", Backend.channels("https://x.com/"))
-        assertEquals("https://x.com/api/channels", Backend.channels("https://x.com//"))
+        assertEquals("https://x.com/api/channels?sharecode=CICKFPDYZQ", Backend.channels("https://x.com/"))
+        assertEquals("https://x.com/api/channels?sharecode=CICKFPDYZQ", Backend.channels("https://x.com//"))
         // 前后空格也要容错
-        assertEquals("https://x.com/api/channels", Backend.channels("  https://x.com/  "))
+        assertEquals("https://x.com/api/channels?sharecode=CICKFPDYZQ", Backend.channels("  https://x.com/  "))
+    }
+
+    @Test
+    fun every_api_url_carries_gateway_share_code() {
+        // v1.4.5：托管平台网关要求每个请求带 sharecode（或不带码的请求会被拦「链接不完整」403）。
+        // App 的网络栈不管理 cookie，所以四个接口构造器必须逐个追加访问码。
+        val SC = "?sharecode=CICKFPDYZQ" // channels/config 是纯路径无查询串 → 用 ? 追加
+        assertTrue(Backend.channels("https://x.com").endsWith(SC))
+        assertTrue(Backend.config("https://x.com").endsWith(SC))
+        assertTrue("relay 应含 &sharecode=", Backend.relay("https://x.com", "http://a/x.m3u8").contains("&sharecode=CICKFPDYZQ"))
+        assertTrue("embed 应含 &sharecode=", Backend.embed("https://x.com", "http://a/x.m3u8").contains("&sharecode=CICKFPDYZQ"))
     }
 
     @Test
@@ -53,8 +64,9 @@ class CoreLogicTest {
         // 回放地址同样需要整体编码
         val out = Backend.embed("https://b.com", "https://www.dodotv20.com/show.php?tid=3&order_type=")
         assertTrue(out.startsWith("https://b.com/api/embed?url="))
-        // 编码后不应再出现裸露的 "?" 与 "&"（它们必须成为 %3F / %26）
-        val paramPart = out.substringAfter("url=")
+        // 编码后的目标参数部分不应再出现裸露的 "?" 与 "&"（它们必须成为 %3F / %26）
+        // 注意 v1.4.5 起末尾会追加 &sharecode=...，所以先截掉访问码段再检查
+        val paramPart = out.substringAfter("url=").substringBefore("&sharecode=")
         assertTrue("参数部分不应含裸露的 &", !paramPart.contains("&"))
         assertTrue("参数部分不应含裸露的 ?", !paramPart.contains("?"))
     }
@@ -131,7 +143,7 @@ class CoreLogicTest {
     @Test
     fun relay_true_uses_relay_url() {
         val out = Backend.playUrl("https://b.com", "http://a/x.m3u8", relay = true)
-        assertEquals("https://b.com/api/relay?url=http%3A%2F%2Fa%2Fx.m3u8", out)
+        assertEquals("https://b.com/api/relay?url=http%3A%2F%2Fa%2Fx.m3u8&sharecode=CICKFPDYZQ", out)
     }
 
     @Test
@@ -175,19 +187,21 @@ class CoreLogicTest {
     @Test
     fun app_sees_same_korean_channels_as_web() {
         val all = ChannelRepo.parseChannels(liveFixture())
-        assertEquals("总台数应与网页版一致", 59, all.size)
+        assertEquals("总台数应与网页版一致", 58, all.size)
 
         // App 的分组过滤规则与网页版一致（按 group 全等筛选）
         val kr = all.filter { it.group == "韩国" }
         assertEquals("韩国组台数应与网页版一致", 31, kr.size)
 
         // 钉死这 31 个台号：任何一端增删都会被这条断言立刻发现
+        // （2026-11-12 对齐 v0.3.28 现状：删过 104/109/122/144/147 等，新增 166 강원SBS 与 168–171 四个 MBC 地方台）
         assertEquals(
             listOf(
-                101, 100, 103, 102, 104, 107, 148, 149, 105, 106, 108, 109,
-                118, 119, 121, 122, 126, 144, 145, 146, 147,
+                101, 100, 103, 102, 107, 148, 149, 105, 106, 108,
+                118, 121, 126, 145, 146,
                 130, 133, 134, 135, 136,
-                137, 138, 139, 140, 141
+                137, 138, 139, 140, 141,
+                166, 167, 168, 169, 170, 171
             ),
             kr.map { it.id }
         )
@@ -199,17 +213,19 @@ class CoreLogicTest {
 
     @Test
     fun unverified_korean_main_stations_are_marked_direct_connect() {
-        // 这 5 个韩国地面波主台（KBS 1TV/2TV、JTBC、SBS、MBC 首尔主台）被后端标成 relay:false：
-        // 中继（上海）够不到，只能本机直连。App 必须如实识别，
-        // 否则它们会像 v1.1.0 之前那样「出现在列表里但一点就报错」。
+        // 后端显式标 "relay": false 的台（本机直连，中继够不到或源站性质决定）：
+        //   137/138 = KBS 1TV/2TV（限韩 IP）；139 = JTBC（换源后仍限韩，经代理中继 403）；
+        //   166 = 강원SBS（中继 504，仅本机直连可达）；168–171 = 四个 MBC 地方台（跨境回源慢，直连供家宽/VPN 提速）。
+        // 140/141（SBS/MBC 主台）已在 v0.3.26 换成中继可播的新源，不再出现在此列表。
+        // App 必须如实识别，否则这些台会像 v1.1.0 之前那样「出现在列表里但一点就报错」。
         val all = ChannelRepo.parseChannels(liveFixture())
         val direct = all.filter { !it.relay }
         assertEquals(
             "线上 relay:false 的条目",
-            listOf(137, 138, 139, 140, 141, 163),
+            listOf(137, 138, 139, 166, 168, 169, 170, 171),
             direct.map { it.id }
         )
         // 其余频道都必须走中继（中继是为破地域封锁而存在的，不能反过来把默认值改错）
-        assertEquals("走中继的台数", 59 - 6, all.count { it.relay })
+        assertEquals("走中继的台数", 58 - 8, all.count { it.relay })
     }
 }

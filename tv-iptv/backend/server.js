@@ -14,7 +14,13 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.27"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.28"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+// 托管平台网关访问码（v0.3.28）：平台对线上链接加 sharecode 校验——每个请求必须带
+// ?sharecode=... 或携带首访时下发的 __wb_rsc cookie，否则网关直接拦「链接不完整」(403)。
+// 浏览器首次打开带码链接后有 cookie，后续请求都放行；但安卓原生播放器(ExoPlayer)不管理 cookie，
+// 所以本服务改写播放列表里的子 URL 时必须把码拼进去（见 /api/relay 的 rewrite），逐请求过网关。
+// ⚠️ 若日后重新部署导致平台换码，需同步改这里和安卓 Backend.SHARE_CODE。
+const SHARE_CODE = "CICKFPDYZQ";
 
 // 往期回放站地址（前端「回放」模式的默认地址）。
 // 因该地址可能经常变动：前端页面内可随时覆盖（存浏览器 localStorage），无需改代码/重新部署；
@@ -552,13 +558,13 @@ function relayStream(req, res, u, depth = 0) {
         const rewrite = (line) => {
           // 改写密钥/映射 URI（#EXT-X-KEY / #EXT-X-MAP 中的 URI="..."）
           let out = line.replace(/URI="([^"]+)"/g, (m, p1) => {
-            try { return 'URI="/api/relay?url=' + encodeURIComponent(new URL(p1, base).toString()) + '"'; }
+            try { return 'URI="/api/relay?url=' + encodeURIComponent(new URL(p1, base).toString()) + "&sharecode=" + SHARE_CODE + '"'; } // 追加访问码：播放器不管理 cookie，子请求必须逐个带码过网关
             catch (e) { return m; }
           });
           // 改写独立的相对/绝对播放地址（变体、分段等）
           const t = out.trim();
           if (t !== "" && !t.startsWith("#")) {
-            try { return "/api/relay?url=" + encodeURIComponent(new URL(t, base).toString()); }
+            try { return "/api/relay?url=" + encodeURIComponent(new URL(t, base).toString()) + "&sharecode=" + SHARE_CODE; } // 同上：逐请求带码
             catch (e) { return out; }
           }
           return out;
@@ -620,7 +626,7 @@ const PLAYER_PATCH = `<script>(function(){
       var abs = new URL(u, location.href);
       if (abs.origin === location.origin) return u;  // 已经是我们自己（同源）→ 不动
       if (/^(cdn\\.jsdelivr\\.net|code\\.jquery\\.com|cdnjs\\.cloudflare\\.com)$/.test(abs.hostname)) return u; // 公共脚本库不动
-      return "/api/relay?url=" + encodeURIComponent(abs.toString()) + "&ref=" + encodeURIComponent(REF) + "&raw=1";
+      return "/api/relay?url=" + encodeURIComponent(abs.toString()) + "&ref=" + encodeURIComponent(REF) + "&raw=1&sharecode=${SHARE_CODE}"; // 追加访问码：${SHARE_CODE} 由服务端在构造此模板串时插值成实际码（浏览器里没有该变量，不能写 + SHARE_CODE +）
     } catch (e) { return u; }
   }
   var _open = XMLHttpRequest.prototype.open;
