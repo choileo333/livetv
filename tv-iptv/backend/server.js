@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.30"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.31"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 // 托管平台网关访问码（v0.3.28）：平台对线上链接加 sharecode 校验——每个请求必须带
 // ?sharecode=... 或携带首访时下发的 __wb_rsc cookie，否则网关直接拦「链接不完整」(403)。
 // 浏览器首次打开带码链接后有 cookie，后续请求都放行；但安卓原生播放器(ExoPlayer)不管理 cookie，
@@ -828,7 +828,9 @@ function embedPage(req, res, u, depth = 0) {
         const markNav = (tag) => tag.replace(/\b(href|action)=("([^"]*)"|'([^']*)')/i, (m, attr, q, dq, sq) => {
           const abs = absIfSame(dq !== undefined ? dq : sq);
           if (!abs) return m;
-          navUrls.push("/api/embed?url=" + encodeURIComponent(abs));
+          // 追加访问码：这些链接是页面内点击时发出的，浏览器只带 cookie 不一定可靠
+          // （老电视盒子的 WebView 可能不存 __wb_rsc cookie），逐请求带码才能保证过网关。
+          navUrls.push("/api/embed?url=" + encodeURIComponent(abs) + "&sharecode=" + SHARE_CODE);
           return attr + '="@@TVNAV' + (navUrls.length - 1) + '@@"';
         });
         html = html.replace(/<a\b[^>]*>/gi, markNav).replace(/<form\b[^>]*>/gi, markNav);
@@ -851,7 +853,7 @@ function embedPage(req, res, u, depth = 0) {
           let abs; try { abs = new URL(raw, upstream); } catch (e) { return m; }
           if (!isPlayerHost(norm(abs.hostname))) return m;   // 只接管已知播放器域名，其余外链不动
           if (abs.pathname === "/api/embed") return m;       // 防自套
-          return 'src="/api/embed?url=' + encodeURIComponent(abs.toString()) + "&ref=" + encodeURIComponent(replayOrigin) + '"';
+          return 'src="/api/embed?url=' + encodeURIComponent(abs.toString()) + "&ref=" + encodeURIComponent(replayOrigin) + "&sharecode=" + SHARE_CODE + '"';
         });
       } else {
         // ⑥ 播放器页：在 <head> 最前面注入一段脚本，把播放器的站外请求统统改走本服务中继
