@@ -12,6 +12,9 @@ cd tv-iptv/backend
 node server.js            # 默认端口 8899，可用 PORT=9000 node server.js 改端口
 ```
 
+> **自建部署（Docker 一条命令上线，不依赖任何托管平台）**：见 [deploy.md](deploy.md)；
+> 部署后用 `./healthcheck.sh http://127.0.0.1:8899` 逐级自检。
+
 ## 接口
 
 | 方法 | 路径 | 说明 | 返回 |

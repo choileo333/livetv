@@ -1,0 +1,10 @@
+services:
+  tvlive-backend:
+    build: .
+    image: tvlive-backend
+    container_name: tvlive-backend
+    restart: unless-stopped
+    ports:
+      - "8899:8899"          # 宿主机端口:容器端口；换宿主机端口只改左边
+    environment:
+      PORT: 8899

@@ -24,6 +24,14 @@
   改写出的卡片链接/iframe src 均含 sharecode ✅。
 - 部署后线上同口径复验通过（见发布记录）。
 
+### 4) 附：自建部署套件（backend/Dockerfile、docker-compose.yml、deploy.md、healthcheck.sh）
+- 动机：复盘发现近期事故（网关加码、平台休眠、cookie 拦截、上线依赖特定环境）全是托管平台引起的，
+  后端是零依赖 Node 单文件，完全具备自建条件——把「部署」从平台手里拿回来。
+- `Dockerfile` + `docker-compose.yml`：`docker compose up -d --build` 一条命令上线（node:20-alpine，含 /api/health 容器健康检查）。
+- `deploy.md`：从买机器到 App 指向新后端的完整步骤（VPS / 家用设备两条路线、升级回滚、外网访问、安全须知）。
+- `healthcheck.sh`：把本次排查人工执行的逐级验证（服务→频道→列表→详情→播放器页→中继）固化为脚本，部署后自检用。
+- `backend/README.md` 增加 deploy.md 指引。server.js 无改动，版本仍为 0.3.31。
+
 ## v0.3.30 — 2026-11-12 20:1x（新增 KBS 全球 CDN 台组 7 台：晚高峰流畅梯队，为长辈观看体验优化）
 
 ### 1) 背景与选型（实测驱动）
