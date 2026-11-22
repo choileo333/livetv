@@ -19,22 +19,27 @@
 ## 二、运行中的服务（实测确认）
 | 服务 | 地址 | 状态 |
 |---|---|---|
-| 本地后端 | `http://localhost:8899/` | ⏸ 当前**未运行**（v0.3.13 验证走的是线上；需本地调试时按下方命令启动） |
-| 云端部署（中继+播放页） | **https://tvlive-relay.app.workbuddy.host/** | ✅ 运行中，`/api/health` 返回 `version:0.3.14`（2026-10-15 09:4x 实测） |
+| 本地后端 | `http://localhost:8899/` | ⏸ 当前**未运行**（需本地调试时按下方命令启动） |
+| 云端部署·新（v0.3.32 起用） | **https://tvlive-relay-09367.app.workbuddy.host/** | ✅ 运行中，`/api/health` 返回 `version:0.3.32`（2026-11-22 22:5x 实测）；访问码 `GJLDAIGP4G` |
+| 云端部署·旧（兜底保留） | https://tvlive-relay.app.workbuddy.host/ | ⚠️ 冻结在 `0.3.31`（发布源目录已删、无法重发布），访问码 `CICKFPDYZQ`，旧版 App 仍指向它 |
 
+> **⚠️ 2026-11-22 重大变更**：后端重发布到新应用（平台按发布源目录匹配，旧应用源目录已删无法覆盖），
+> 平台**换发新访问码** `GJLDAIGP4G`。三处必须一致：server.js `SHARE_CODE` ↔ App `Backend.SHARE_CODE` ↔
+> `ReplayRescueScript.SHARE_CODE`。App v1.4.7 起默认指向新域名。
 
 - 本地启动命令（如需重启）：
   ```
-  cd "D:/WorkBuddy/work_space/2026-10-11-14-07-38/re-soft/tv-iptv/backend"
-  "C:/Users/LeoNFiona/.workbuddy/binaries/node/versions/22.22.2-6/node.exe" server.js
+  cd backend目录（维护仓库 tv-iptv/backend 或 D:/zcode_project/livetv/tv-iptv/backend）
+  node server.js
   ```
 - 停止本地后端（8899）：
   ```
   netstat -ano | grep ":8899" | grep LISTENING | awk '{print $5}' | head -1   # 取 PID
   taskkill //F //PID <PID>
   ```
-- 云端应用可在 **「设置—数据管理—应用」** 中管理（下线/重部署）。
-- 部署入口：`domainPrefix = tvlive-relay`，`appName = TvLive 电视直播`。
+- 新云端应用可在 **「设置—数据管理—应用」** 中管理（下线/重部署）。
+- 部署入口（2026-11-22 起）：**发布源目录 `D:\zcode_project\livetv\tv-iptv\backend`**（必须与维护仓库 backend/ 同步后发布），
+  `domainPrefix = tvlive-relay`，`appName = TvLive 电视直播`，发布结果固定落在 `tvlive-relay-09367` 应用上。
 
 ## 三、频道现状
 - **总数 55**（v0.3.17 起，删 4 台后）：韩国 28 / 测试 1 / 新闻 5 / 音乐 3 / 纪录片 5 / 体育 3 / 电影 10

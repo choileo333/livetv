@@ -16,8 +16,8 @@ android {
         applicationId "com.leo.tvlive"  // 应用唯一 ID（与 doubao 工程完全不同，可并存安装）
         minSdk 21                        // 最低支持 Android 5.0：覆盖老旧电视盒子
         targetSdk 34                     // 目标 SDK
-        versionCode 13                     // 内部版本号（每次发版递增）
-        versionName "1.4.5"                // 展示版本号（同时显示在 App 界面上）
+        versionCode 16                     // 内部版本号（每次发版递增）
+        versionName "1.4.8"                // 展示版本号（同时显示在 App 界面上）
     }
 
     buildTypes {

@@ -14,22 +14,28 @@ import java.net.URLEncoder
 object Backend {
 
     /** 默认后端地址：线上部署的实例（可在 App 界面里改成局域网自建地址） */
-    const val DEFAULT_BASE = "https://tvlive-relay.app.workbuddy.host"
+    const val DEFAULT_BASE = "https://tvlive-relay-09367.app.workbuddy.host"
 
     /**
      * 托管平台网关访问码（v1.4.5）：平台对线上链接加了 sharecode 校验——每个请求必须带
      * ?sharecode=... 或携带首访时下发的 __wb_rsc cookie，否则网关直接拦「链接不完整」(403)。
      * App 的 OkHttp/播放器默认不管理 cookie，所以这里给每个接口 URL 统一追加访问码。
      * ⚠️ 与后端 server.js 的 SHARE_CODE 必须保持一致；若日后重新部署导致平台换码，两处都要改。
+     * v1.4.8：改为运行时可切换——启动时从远程配置（GitHub 仓库 remote-config.json）拉取并应用，
+     *         以下常量只作为「拉取失败时的兜底默认值」。
      */
-    const val SHARE_CODE = "CICKFPDYZQ"
+    const val DEFAULT_SHARE_CODE = "GJLDAIGP4G"
+
+    /** 当前生效的网关访问码（远程配置成功应用后会被替换；所有接口构造器都读它） */
+    @Volatile
+    var shareCode: String = DEFAULT_SHARE_CODE
 
     /** 去掉用户可能误输入的结尾斜杠，保证拼接结果不会出现 "//api" */
     private fun norm(base: String): String = base.trim().trimEnd('/')
 
     /** 给接口路径追加访问码：已有查询串（含 ?）用 &，否则用 ? */
     private fun withSc(path: String): String =
-        path + (if (path.contains("?")) "&sharecode=" else "?sharecode=") + SHARE_CODE
+        path + (if (path.contains("?")) "&sharecode=" else "?sharecode=") + shareCode
 
     /**
      * 对查询参数值做编码。

@@ -13,6 +13,8 @@ object Prefs {
     private const val K_BASE = "backend_url"       // 后端地址
     private const val K_LAST = "last_channel"      // 上次观看频道编号
     private const val K_FAV = "favorites"          // 收藏集合
+    private const val K_CUSTOM = "backend_customized" // 用户是否手动改过后端地址
+    private const val K_REMOTE = "remote_cfg"      // 最近一次成功的远程配置缓存（JSON 文本）
 
     private lateinit var sp: SharedPreferences
 
@@ -27,6 +29,16 @@ object Prefs {
     var backendUrl: String
         get() = sp.getString(K_BASE, Backend.DEFAULT_BASE) ?: Backend.DEFAULT_BASE
         set(value) = sp.edit().putString(K_BASE, value.trim()).apply()
+
+    /** 用户是否手动改过后端地址（改过则远程配置不再覆盖 base，尊重用户选择；访问码仍会更新） */
+    var backendCustomized: Boolean
+        get() = sp.getBoolean(K_CUSTOM, false)
+        set(value) = sp.edit().putBoolean(K_CUSTOM, value).apply()
+
+    /** 最近一次成功应用的远程配置缓存（JSON 文本；下次启动秒应用，不等网络） */
+    var cachedRemoteCfg: String?
+        get() = sp.getString(K_REMOTE, null)
+        set(value) = sp.edit().putString(K_REMOTE, value).apply()
 
     /** 上次观看的频道编号（-1 表示没有记录） */
     var lastChannelId: Int

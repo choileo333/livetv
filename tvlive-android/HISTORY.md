@@ -839,3 +839,109 @@ https://后端/api/relay?url=http%3A%2F%2Fonair.cdn.tvchosun.com%2F...%2Fplaylis
 为在 D 盘跑模拟器，把两台 AVD 从 `C:\Users\LeoNFiona\.android\avd` 复制到
 `D:\WorkBuddy\android-avd`，并把数据分区从 6GB 调小到 3GB（C 盘仅剩 7.2GB，原配置需要 7.37GB 直接 FATAL）。
 原 C 盘 AVD 未删除。
+
+## v1.4.6 — 2026-11-17（修「旧电视回放站点播放器起不来时，兜底自建播放必 403」：兜底脚本请求补 sharecode + 确定性错误恢复上屏）
+
+### 1) 现象与根因（线上实测复现，非猜测）
+- 用户反馈（2026-11-17 上午，附旧小米电视截图）：v0.3.31 修完「链接不完整」后提示条消失、
+  列表/详情/播放器页都能显示，但视频仍是海报+播放键（0:00），点不动——手机端同样 App 一切正常。
+- 根因：**App 兜底自建播放链路（ReplayRescueScript）漏带网关访问码**。v1.4.5 只给
+  `Backend` 四个构造器补了 sharecode，但兜底脚本里有三处后端请求没带：
+  ① 自建播放器取流 `/api/relay?url=<vid>&ref=<播放器域>&raw=1`；
+  ② `patchNet()` 接管的 XHR/fetch（hls.js 后续分片请求全走这里）；
+  ③ 同源加载 `/hls.min.js`。
+- 致命组合：老电视盒子的 WebView **不存 `__wb_rsc` cookie**（这正是 v0.3.31 的根因），
+  于是站点播放器一旦没建出来（老内核跑不动站点脚本/MSE 缺失），9 秒后兜底接管，
+  取流请求即被网关 403「链接不完整」→ 兜底必死。手机端站点播放器自己能活、兜底从不触发，
+  所以这个 bug 在手机上不可见。
+- 附带盲区：v1.4.4 按「去屏上警告」要求把诊断全部藏进 logcat，旧电视上兜底失败/能力不足
+  的根因屏上毫无线索，本轮排查只能靠猜。
+
+### 2) 改动（仅 App 侧，后端无需动）
+- `ReplayRescueScript.kt`：脚本内新增 `SC`（与 `Backend.SHARE_CODE`、`server.js` 同值 `CICKFPDYZQ`），
+  上述三处请求全部追加 `sharecode`；脚本版本 4→5（保证已注入的旧版自动失效）。
+- `MainActivity.kt` `showDiag()`：**确定性错误恢复上屏**——仅 `SEVERE_RE` 命中的
+  （自建播放失败 / hls 致命错误 / 能力不足 / 内核过旧 / JS 异常等）写一次状态行 `⚠ …`，
+  普通提示继续不上屏，平时依然干净；诊断仍全量进 logcat。
+- `app/build.gradle`：versionCode 13→14，versionName 1.4.5→1.4.6。
+
+### 3) 验证（线上端到端，Node 脚本复刻兜底脚本行为）
+- 链路：列表页(带码) → 详情页 → `view_iframe`(带码✅) → 播放器页 → 解密 `phpsiteEc2/key3` 得 vid。
+- **复刻兜底现状**：`/api/relay?...&raw=1`（不带码）→ **403**（网关拦截页）——与旧电视现象闭环。
+- **复刻修复后**：同 URL 加 `&sharecode=CICKFPDYZQ`（ref=播放器域）→ **200**，
+  返回合法 `#EXTM3U` 播放列表（清单改写/分片带码由后端 v0.3.28 已保证）。
+- 注入脚本整体抽出后 `node --check` 语法通过，`sharecode` 插值 3 处齐全。
+
+### 4) 使用变化
+- 旧电视需安装 v1.4.6 APK 后重进回放页。若仍不播，状态行会出现 `⚠ …` 根因行
+  （例如「本机既跑不了 hls.js 也没有原生 HLS」= 设备能力上限，「hls 致命错误 networkError」= 网络层），
+  拍照即可定位下一步。
+
+### 产物
+- `tvlive-android-v1.4.6.apk`（工程根目录，6.5 MB，debug 签名）
+- 构建环境（2026-11-17 起本地可构建）：JDK 17 + Gradle 8.2 + Android SDK 34 装于
+  `D:\workbuddy_project\_toolchain\`，`local.properties` 指向该 SDK；依赖走阿里云镜像时
+  需临时替换 `settings.gradle` 的 repositories（构建完还原，不提交）。
+
+---
+
+
+## v1.4.7 — 2026-11-22（后端重发布换域名/换访问码：App 默认后端与访问码同步切换，配合后端 v0.3.32 慢台优化）
+
+### 1) 背景（为什么换域名）
+- 客户反馈多台频道速度差。后端 v0.3.32 完成「时长预算制预取 + 摘除 4 死台」优化，需要重发布上线。
+- 但旧线上应用 `tvlive-relay.app.workbuddy.host`（0.3.31）的发布源目录已随旧会话删除，
+  本机工具无法向它重发布（平台按发布源目录匹配应用）。旧应用仍在运行，客户端不断它也不会立刻坏。
+- 因此从维护工作区重发布，平台创建了**新应用**：`https://tvlive-relay-09367.app.workbuddy.host/`，
+  平台换发**新访问码** `GJLDAIGP4G`（旧码在新域名上被网关 403，实测确认）。
+
+### 2) 改动
+- `data/Backend.kt`：`DEFAULT_BASE` → 新域名；`SHARE_CODE` → `GJLDAIGP4G`。
+- `util/ReplayRescueScript.kt`：兜底脚本内 `SHARE_CODE` → `GJLDAIGP4G`。
+- `app/src/test/.../CoreLogicTest.kt`：断言里的访问码同步更新（8 处）。
+- `app/build.gradle`：versionCode 14→15，versionName 1.4.6→1.4.7。
+
+### 3) 配套后端改动（同日 v0.3.32）
+- server.js 的 `SHARE_CODE` 同步改为 `GJLDAIGP4G`——它会被拼进改写后的 m3u8 分片 URL 里过网关，
+  若不换码，网页播放器的分片请求会全部 403。
+- 后端发布源目录：`D:/zcode_project/livetv/tv-iptv/backend`（与维护仓库的 backend/ 保持同步）。
+
+### 4) 使用变化
+- **所有设备需安装 v1.4.7 APK**（旧 APK 仍指向旧域名，能继续用但吃不到 v0.3.32 的慢台优化）。
+- 旧域名 `tvlive-relay.app.workbuddy.host` 冻结在 0.3.31，作为旧版兜底保留，暂不删除。
+
+---
+
+## v1.4.8 — 2026-11-22（远程配置发现：以后换后端域名/换访问码不再需要重装 App）
+
+### 1) 背景与目标
+- v1.4.7 因平台重发布换域名/换码，所有设备被迫重装。用户明确要求：以后维护只改后端、客户端不装。
+- 方案：App 启动时从 GitHub 仓库的 `tv-iptv/backend/remote-config.json`（base + sharecode）
+  拉取当前后端配置并应用。换后端时只需改这个 JSON 并推送，全部设备下次启动自动跟随。
+
+### 2) 改动
+- 新增 `data/RemoteConfig.kt`：
+  - 三个配置源按序尝试（jsdelivr CDN → gh-proxy 镜像 → GitHub raw），单个超时 6s，全部失败静默保留现状；
+  - **健康校验前置**：解析出 base/sharecode 后先真实请求 `base/api/health?sharecode=码`，
+    返回 `ok:true` 才应用——镜像内容陈旧/被篡改的坏配置带不动 App；
+  - 应用 = 更新 `Backend.shareCode` + （用户未手动改过后端时）更新 `Prefs.backendUrl`，
+    并缓存进本地（下次启动秒应用，不等网络）。
+- `data/Backend.kt`：`SHARE_CODE` 常量 → `@Volatile var shareCode`（`DEFAULT_SHARE_CODE` 作兜底默认值），
+  所有接口构造器（withSc）读当前值。
+- `data/Prefs.kt`：新增 `backendCustomized`（用户手动改过后端则远程配置不再覆盖 base，仅更新访问码）
+  与 `cachedRemoteCfg`（远程配置本地缓存）。
+- `App.kt`：onCreate 里调用 `RemoteConfig.bootstrap(this)`（缓存秒应用 + 后台拉新，不阻塞启动）。
+- `util/ReplayRescueScript.kt`：脚本里的访问码改为注入时从 `Backend.shareCode` 动态取值（`JS` 改 getter）。
+- `MainActivity.showBackendDialog`：保存时置 `Prefs.backendCustomized = true`。
+- 测试：新增「访问码运行时可切换」「远程配置解析合法/非法」4 个用例。
+
+### 3) 今后的维护流程（重要）
+- 只改后端代码：改仓库 → 同步到 `D:/zcode_project/livetv/tv-iptv/backend` → 重发布（同应用同域名同码）→ 完事，客户端无感。
+- 换域名/换访问码：改 `remote-config.json` 的 base/sharecode → 推 GitHub main → 设备下次启动自动跟随。
+- 用户手动填过局域网自建地址的设备：base 永不被远程配置覆盖（尊重用户），访问码仍会更新。
+
+### 4) 版本
+- `app/build.gradle`：versionCode 15→16，versionName 1.4.7→1.4.8。
+- 注意：remote-config.json 需推送到 GitHub main 后拉取链路才真正生效；推送前 App 使用内置兜底值（与当前线上一致，行为不变）。
+
+---

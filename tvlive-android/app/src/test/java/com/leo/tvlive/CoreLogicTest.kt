@@ -3,6 +3,7 @@ package com.leo.tvlive
 import com.leo.tvlive.data.Backend
 import com.leo.tvlive.data.ChannelRepo
 import com.leo.tvlive.data.MimeHint
+import com.leo.tvlive.data.RemoteConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -34,7 +35,7 @@ class CoreLogicTest {
             "http://a.com/x.m3u8?t=1&n=2"
         )
         assertEquals(
-            "https://tvlive-relay.app.workbuddy.host/api/relay?url=http%3A%2F%2Fa.com%2Fx.m3u8%3Ft%3D1%26n%3D2&sharecode=CICKFPDYZQ",
+            "https://tvlive-relay.app.workbuddy.host/api/relay?url=http%3A%2F%2Fa.com%2Fx.m3u8%3Ft%3D1%26n%3D2&sharecode=GJLDAIGP4G",
             out
         )
     }
@@ -42,22 +43,52 @@ class CoreLogicTest {
     @Test
     fun base_url_with_trailing_slash_does_not_produce_double_slash() {
         // 用户手输后端地址时常带结尾斜杠，必须规范化，否则会拼出 "//api/channels"
-        assertEquals("https://x.com/api/channels?sharecode=CICKFPDYZQ", Backend.channels("https://x.com/"))
-        assertEquals("https://x.com/api/channels?sharecode=CICKFPDYZQ", Backend.channels("https://x.com//"))
+        assertEquals("https://x.com/api/channels?sharecode=GJLDAIGP4G", Backend.channels("https://x.com/"))
+        assertEquals("https://x.com/api/channels?sharecode=GJLDAIGP4G", Backend.channels("https://x.com//"))
         // 前后空格也要容错
-        assertEquals("https://x.com/api/channels?sharecode=CICKFPDYZQ", Backend.channels("  https://x.com/  "))
+        assertEquals("https://x.com/api/channels?sharecode=GJLDAIGP4G", Backend.channels("  https://x.com/  "))
     }
 
     @Test
     fun every_api_url_carries_gateway_share_code() {
         // v1.4.5：托管平台网关要求每个请求带 sharecode（或不带码的请求会被拦「链接不完整」403）。
         // App 的网络栈不管理 cookie，所以四个接口构造器必须逐个追加访问码。
-        val SC = "?sharecode=CICKFPDYZQ" // channels/config 是纯路径无查询串 → 用 ? 追加
+        val SC = "?sharecode=GJLDAIGP4G" // channels/config 是纯路径无查询串 → 用 ? 追加
         assertTrue(Backend.channels("https://x.com").endsWith(SC))
         assertTrue(Backend.config("https://x.com").endsWith(SC))
-        assertTrue("relay 应含 &sharecode=", Backend.relay("https://x.com", "http://a/x.m3u8").contains("&sharecode=CICKFPDYZQ"))
-        assertTrue("embed 应含 &sharecode=", Backend.embed("https://x.com", "http://a/x.m3u8").contains("&sharecode=CICKFPDYZQ"))
+        assertTrue("relay 应含 &sharecode=", Backend.relay("https://x.com", "http://a/x.m3u8").contains("&sharecode=GJLDAIGP4G"))
+        assertTrue("embed 应含 &sharecode=", Backend.embed("https://x.com", "http://a/x.m3u8").contains("&sharecode=GJLDAIGP4G"))
     }
+
+    @Test
+    fun share_code_is_switchable_at_runtime() {
+        // v1.4.8：访问码改为运行时可切换（远程配置发现），换码后所有接口构造器必须立即用新码
+        val old = Backend.shareCode
+        try {
+            Backend.shareCode = "NEWCODE1"
+            assertEquals("https://x.com/api/channels?sharecode=NEWCODE1", Backend.channels("https://x.com"))
+        } finally {
+            Backend.shareCode = old   // 恢复，不影响其它测试
+        }
+    }
+
+    // ── 远程配置解析（v1.4.8）────────────────────────────────
+
+    @Test
+    fun remote_config_parses_valid_json() {
+        val cfg = RemoteConfig.parse("""{"v":1,"base":"https://b.example","sharecode":"AB12CD34","updated":"2026-11-22","note":"x"}""")
+        assertEquals("https://b.example", cfg?.base)
+        assertEquals("AB12CD34", cfg?.code)
+    }
+
+    @Test
+    fun remote_config_rejects_invalid() {
+        assertNull("base 缺协议应被拒", RemoteConfig.parse("""{"base":"b.example","sharecode":"AB"}"""))
+        assertNull("空访问码应被拒", RemoteConfig.parse("""{"base":"https://b.example","sharecode":""}"""))
+        assertNull("非法 JSON 应被拒", RemoteConfig.parse("not json"))
+        assertNull("空串应被拒", RemoteConfig.parse(""))
+    }
+
 
     @Test
     fun embed_encodes_replay_target() {
@@ -143,7 +174,7 @@ class CoreLogicTest {
     @Test
     fun relay_true_uses_relay_url() {
         val out = Backend.playUrl("https://b.com", "http://a/x.m3u8", relay = true)
-        assertEquals("https://b.com/api/relay?url=http%3A%2F%2Fa%2Fx.m3u8&sharecode=CICKFPDYZQ", out)
+        assertEquals("https://b.com/api/relay?url=http%3A%2F%2Fa%2Fx.m3u8&sharecode=GJLDAIGP4G", out)
     }
 
     @Test

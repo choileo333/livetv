@@ -1,5 +1,7 @@
 package com.leo.tvlive.util
 
+import com.leo.tvlive.data.Backend
+
 /**
  * 回放页「播放器兜底」注入脚本（v1.4.0）。
  *
@@ -64,12 +66,25 @@ object ReplayRescueScript {
     /**
      * 脚本版本：重复注入时用于短路。改动脚本逻辑必须递增，否则已在页面里跑的旧版本不会更新。
      */
-    private const val VERSION = 4
+    private const val VERSION = 5
 
-    /** 待注入的脚本源码（严格 ES5：不用箭头函数 / let / const / 模板字符串，兼容老电视盒子） */
-    val JS: String = """
+    /**
+     * 托管平台网关访问码（v1.4.6）：v0.3.28 起平台对线上链接做 sharecode 校验——
+     * 每个请求必须带 ?sharecode=... 或携带首访下发的 __wb_rsc cookie，否则网关 403「链接不完整」。
+     * 老电视盒子的 WebView 不存 cookie（这正是 v0.3.31 的根因），所以本脚本自建播放发出的
+     * 每一个后端请求（取流 /api/relay、分片中继、/hls.min.js）都必须逐个带码。
+     * v1.4.8：改为每次注入时从 Backend.shareCode 动态取值（远程配置可随时换码），不再写死。
+     */
+    private val shareCode: String get() = Backend.shareCode
+
+    /**
+     * 待注入的脚本源码（严格 ES5：不用箭头函数 / let / const / 模板字符串，兼容老电视盒子）。
+     * 用 getter 而非 val：每次注入重新求值，保证拿到的是当前生效的访问码。
+     */
+    val JS: String get() = """
 (function () {
   var V = $VERSION;
+  var SC = '$shareCode';   // 网关访问码：老盒子不存 cookie，后端请求必须逐个带码过网关（v1.4.6）
   if (window.__tvRescue && window.__tvRescue.version === V) { return; }
 
   var MAX_DEPTH = 3;      // 同源 iframe 下钻层数上限（防嵌套循环）
@@ -374,7 +389,7 @@ object ReplayRescueScript {
         var abs = new URL(u, doc.location.href);
         if (self && abs.origin === self) return u;     // 已经是我们自己（同源）→ 不动
         return '/api/relay?url=' + encodeURIComponent(abs.toString()) +
-               '&ref=' + encodeURIComponent(refOrigin) + '&raw=1';
+               '&ref=' + encodeURIComponent(refOrigin) + '&raw=1&sharecode=' + SC;
       } catch (e) { return u; }
     }
     try {
@@ -437,7 +452,7 @@ object ReplayRescueScript {
     patchNet(d, info.ref || '');
 
     var rel = '/api/relay?url=' + encodeURIComponent(info.stream) +
-              '&ref=' + encodeURIComponent(info.ref || '') + '&raw=1';
+              '&ref=' + encodeURIComponent(info.ref || '') + '&raw=1&sharecode=' + SC;
 
     /** 本机没有 MSE 时的退路：交给系统原生 HLS（部分老内核反而支持这个） */
     function nativeOrTell(reason) {
@@ -486,7 +501,7 @@ object ReplayRescueScript {
     // 该文档里没有 hls.js（依赖没加载成功）→ 从我们自己的后端同源取一份
     try {
       var s = d.createElement('script');
-      s.src = '/hls.min.js';
+      s.src = '/hls.min.js?sharecode=' + SC;   // 同源请求也要带码过网关（v1.4.6）
       s.onload = function () { Hs = w.Hls; if (Hs) { withHls(); } else { nativeOrTell('加载的 hls.js 没有生效'); } };
       s.onerror = function () { nativeOrTell('hls.js 加载失败'); };
       (d.head || d.body || d.documentElement).appendChild(s);

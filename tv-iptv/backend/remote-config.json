@@ -1,0 +1,7 @@
+{
+  "v": 1,
+  "base": "https://tvlive-relay-09367.app.workbuddy.host",
+  "sharecode": "GJLDAIGP4G",
+  "updated": "2026-11-22",
+  "note": "App v1.4.8+ 启动时自动拉取本文件切换后端地址与网关访问码。改后端部署后：更新 base/sharecode → 提交推送到 GitHub main → 所有已装设备下次启动自动跟随，无需重装 App。校验规则：App 会先请求 base/api/health?sharecode=<码>，返回 ok:true 才应用，防止坏配置扩散。"
+}

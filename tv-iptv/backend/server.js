@@ -14,13 +14,14 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.31"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.32"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 // 托管平台网关访问码（v0.3.28）：平台对线上链接加 sharecode 校验——每个请求必须带
 // ?sharecode=... 或携带首访时下发的 __wb_rsc cookie，否则网关直接拦「链接不完整」(403)。
 // 浏览器首次打开带码链接后有 cookie，后续请求都放行；但安卓原生播放器(ExoPlayer)不管理 cookie，
 // 所以本服务改写播放列表里的子 URL 时必须把码拼进去（见 /api/relay 的 rewrite），逐请求过网关。
 // ⚠️ 若日后重新部署导致平台换码，需同步改这里和安卓 Backend.SHARE_CODE。
-const SHARE_CODE = "CICKFPDYZQ";
+// 2026-11-22 重发布到新应用 tvlive-relay-09367，平台下发新码（旧应用 tvlive-relay 仍在线跑 0.3.31，见 STATE.md）。
+const SHARE_CODE = "GJLDAIGP4G";
 
 // 往期回放站地址（前端「回放」模式的默认地址）。
 // 因该地址可能经常变动：前端页面内可随时覆盖（存浏览器 localStorage），无需改代码/重新部署；
@@ -45,9 +46,16 @@ function plCachePut(k, body) {
 const segCache = new Map();               // key: 上游分片 url -> { buf, ct, ts }
 let segCacheBytes = 0;                    // 已缓存字节数（用于上限淘汰）
 const SEG_CACHE_MAX_BYTES = 80 * 1024 * 1024; // 缓存上限 80MB
-const SEG_CACHE_TTL = 20000;              // 分片 20s 过期（直播分片时效很短）
-const PRE_FETCH_N = 1;                     // 每次只预取「下一个」分片（曾为 4：并发拉 4 段会在窄的国际线路上抢走播放所需带宽，反而更卡）
-const MAX_PREFETCH_INFLIGHT = 1;           // 全局最多同时进行 1 个预取（顺序化，绝不占满链路）
+const SEG_CACHE_TTL = 25000;              // 分片 25s 过期（直播分片时效很短；v0.3.32 20→25s，覆盖 2s 小分片 × 深预取窗口）
+// v0.3.32 预取策略改版：按「分片时长预算」自适应 —— 目标是让缓存里始终有 ≥8s 的待播内容。
+//   · 2s 小分片（아리랑 系）→ 预取 4 张：慢路由上每张分片有 ~1-2s 的握手/路由延迟，
+//     只预取 1 张时预取速度追不上播放节奏，观众必然周期性卡顿（2026-11-22 实测瓶颈）；
+//   · 10s 大分片（TV조선 系）→ 只预取 1-2 张：大分片本身就慢，多并发会重蹈
+//     「窄线路上抢走播放带宽」的覆辙（v0.3.x 曾因并发预取 4 段回退到 1，教训保留）。
+//   · 播放端正在拉的分片永远优先（servingSeg 跳过不变），预取绝不与之双下载。
+const PRE_FETCH_SECONDS = 8;               // 预取时长预算：缓存里至少备好 8 秒的待播内容
+const PRE_FETCH_MAX_SEGMENTS = 4;          // 单轮预取分片数上限（防小分片把预算放大成几十张）
+const MAX_PREFETCH_INFLIGHT = 3;           // 全局最多同时进行 3 个预取（慢路由上 1 个追不上；播放端请求永远优先）
 const prefetching = new Set();            // 正在预取的 url（去重，避免重复拉取）
 const servingSeg = new Set();             // 播放端正拉取的分片 url（预取必须跳过，避免同一分片被下载两次、白占带宽）
 
@@ -69,12 +77,18 @@ function segCachePut(url, buf, ct) {
   }
 }
 // 后台预取分片（失败静默忽略，绝不影响正常请求路径）
-function prefetchSegments(urls, refererOrigin) {
-  urls.slice(-PRE_FETCH_N).forEach((u) => {   // 只预取列表末尾（即最新）的分片，那才是马上要播的
-    if (prefetching.size >= MAX_PREFETCH_INFLIGHT) return;                       // 已有预取在跑 → 不再并发（关键：避免占满带宽）
-    if (segCache.has(u) || prefetching.has(u) || servingSeg.has(u)) return;      // 已缓存 / 已预取 / 播放端正下载 → 跳过
+// items: [{ u: 分片绝对地址, dur: 分片时长秒 }]，从「最新」往「旧」方向累计时长预算
+function prefetchSegments(items, refererOrigin) {
+  let budget = 0, picked = 0;
+  for (let i = items.length - 1; i >= 0 && picked < PRE_FETCH_MAX_SEGMENTS; i--) { // 从最新分片向前取
+    const it = items[i];
+    if (!it || !it.u || budget >= PRE_FETCH_SECONDS) break;                        // 预算打满即收手
+    const u = it.u;
+    if (prefetching.size >= MAX_PREFETCH_INFLIGHT) return;                       // 并发上限（关键：避免占满带宽）
+    if (segCache.has(u) || prefetching.has(u) || servingSeg.has(u)) { budget += it.dur || 6; picked++; continue; } // 已备好的也计入预算
     let up; try { up = new URL(u); } catch (e) { return; }
     if (/\.m3u8?(\?.*)?$/i.test(u)) return;   // 只预取真正的媒体分片，不预取子播放列表
+    budget += it.dur || 6; picked++;
     prefetching.add(u);
     const mm = up.protocol === "https:" ? https : http;
     const rr = mm.request(u, {
@@ -93,7 +107,7 @@ function prefetchSegments(urls, refererOrigin) {
     rr.on("timeout", () => { rr.destroy(); prefetching.delete(u); });
     rr.on("error", () => prefetching.delete(u));
     rr.end();
-  });
+  }
 }
 
 // —— 频道数据（id/name/url 与 App 端 Channel 模型对应；group 用于分组；logo 为台标）——
@@ -122,7 +136,6 @@ const CHANNELS = [
   {"id": 31, "name": "China Travel", "url": "https://fastlive.cctvplus.com/out/v1/ca6f9297b7314a63959435028af287fc/index.m3u8", "logo": "https://i.imgur.com/vSgY3CD.png", "group": "纪录片", "note": "CCTV 国际旅游频道（公开免费）"},
   {"id": 32, "name": "Asharq Discovery", "url": "https://svs.itworkscdn.net/asharqdiscoverylive/asharqd.smil/playlist_dvr.m3u8", "logo": "https://i.imgur.com/Czxi7yk.png", "group": "纪录片", "note": "探索类纪录片"},
   {"id": 33, "name": "Documentary+", "url": "https://ef79b15c8c7c46c7a9de9d33001dbd07.mediatailor.us-west-2.amazonaws.com/v1/master/ba62fe743df0fe93366eba3a257d792884136c7f/LINEAR-859-DOCUMENTARYPLUS-DOCUMENTARYPLUS/mt/documentaryplus/859/hls/master/playlist.m3u8", "logo": "https://i.imgur.com/x57klfS.png", "group": "纪录片", "note": "Amazon MediaTailor · 纪录片"},
-  {"id": 34, "name": "Autentic History", "url": "https://9e754fa707344ccca6d84955c8fcaf36.mediatailor.us-east-1.amazonaws.com/v1/master/44f73ba4d03e9607dcd9bebdcb8494d86964f1d8/RlaxxTV-eu_AutenticHistory/playlist.m3u8", "logo": "https://d3b6luslimvglo.cloudfront.net/images/79/rlaxximages/channels-rescaled/icon-white/autentichistory_white.png", "group": "纪录片", "note": "Amazon MediaTailor · 历史"},
   {"id": 53, "name": "ATG Live (720p)", "url": "https://kanal75xto-llhls.akamaized.net/live/Data/atg-kanal-15-02a-rr/HLS-Legacy-HL/atg-kanal-15-02a-rr.m3u8", "logo": "https://i.imgur.com/bPWFXkL.png", "group": "体育", "note": "Akamai CDN"},
   {"id": 54, "name": "beIN SPORTS XTRA (1080p)", "url": "https://bein-xtra-bein.amagi.tv/playlist.m3u8", "logo": "https://i.ibb.co/HT49GPmB/XTRA-2.png", "group": "体育", "note": "Amagi CDN"},
   {"id": 58, "name": "ACC Digital Network (1080p)", "url": "https://raycom-accdn-firetv.amagi.tv/playlist.m3u8", "logo": "https://i.imgur.com/V6Kaqha.png", "group": "体育", "note": "Amagi CDN"},
@@ -140,11 +153,8 @@ const CHANNELS = [
   {"id": 151, "name": "MovieSphere UK (1080p)", "url": "https://moviesphereuk-samsunguk.amagi.tv/playlist.m3u8", "logo": "", "group": "电影", "note": "Amagi/Samsung FAST · 实测 2.5Mbps"},
   {"id": 152, "name": "MovieSphere (1080p)", "url": "https://amg00353-lionsgatestudio-moviesphere-xumo-zh5u0.amagi.tv/playlist.m3u8", "logo": "", "group": "电影", "note": "Lionsgate/Cineverse · Amagi · 实测 2.5Mbps"},
   {"id": 153, "name": "MyTime Movie Network (United Kingdom) (1080p)", "url": "https://appletree-mytimeuk-rakuten.amagi.tv/playlist.m3u8", "logo": "", "group": "电影", "note": "Rakuten/Amagi FAST · 实测 2.5Mbps"},
-  {"id": 154, "name": "Rakuten TV Top Movies (1080p)", "url": "https://ff335120300e4742a2b135ee9a9e7df8.mediatailor.eu-west-1.amazonaws.com/v1/master/0547f18649bd788bec7b67b746e47670f558b6b2/production-LiveChannel-5983/master.m3u8", "logo": "", "group": "电影", "note": "Rakuten FAST (AWS MediaTailor) · 实测 2.7Mbps"},
   {"id": 155, "name": "Ebony TV by Lionsgate (1080p)", "url": "https://aegis-cloudfront-1.tubi.video/a0ad4b53-ab3a-48dd-be12-bc7f533c372c/playlist.m3u8", "logo": "", "group": "电影", "note": "Tubi/Lionsgate FAST · 实测 3.2Mbps"},
   {"id": 156, "name": "Warner TV Asia (720p)", "url": "https://cdn4.skygo.mn/live/disk1/Warner/HLSv3-FTA/Warner.m3u8", "logo": "", "group": "电影", "note": "亚洲版 · 实测 10.7Mbps"},
-  {"id": 157, "name": "HBO Hits (720p)", "url": "http://tvsen7.aynascope.net/hbo2/index.m3u8", "logo": "", "group": "电影", "note": "实测 6.7Mbps"},
-  {"id": 158, "name": "AMC (United States) (720p)", "url": "http://23.239.31.26:8989/amc/index.m3u8", "logo": "", "group": "电影", "note": "实测 5.0Mbps"},
   {"id": 159, "name": "Popcorn Central (1080p)", "url": "https://oly-ftvpc.otteravision.com/oly/ftvpc/ftvpc.m3u8", "logo": "", "group": "电影", "note": "Ottera FAST · 实测 20.1Mbps"},
   {"id": 160, "name": "CGTN English (央视国际英语)", "url": "https://english-livebkali.cgtn.com/live/encgtn.m3u8", "logo": "", "group": "新闻", "note": "CGTN 英语新闻 · 官方 cgtn.com 域名源，经上海云端中继可达（v0.3.9 恢复，此前误删）"},
   {"id": 161, "name": "NHK World-Japan (日本放送协会)", "url": "https://media-osa.hls.nhkworld.jp/hls/w/live/master.m3u8", "logo": "", "group": "新闻", "note": "NHK World 国际频道 · 官方 nhkworld.jp 域名源，经上海云端中继可达（v0.3.9 恢复，此前误删）"},
@@ -665,19 +675,24 @@ function relayStream(req, res, u, depth = 0) {
           }
           return out;
         };
-        const segUrls = []; // 收集本播放列表里的媒体分片（绝对地址），用于预取
+        const segItems = []; // 收集本播放列表里的媒体分片（绝对地址 + 分片时长），用于时长预算预取（v0.3.32）
+        let pendingDur = 6;  // 待配对的 EXTINF 时长（默认 6s：解析不到时按典型直播分片估计）
         const out = buf.split(/\r?\n/).map((line) => {
           const tt = line.trim();
           if (tt !== "" && !tt.startsWith("#")) {
             try {
               const au = new URL(tt, base).toString();
-              if (!/\.m3u8?(\?.*)?$/i.test(au)) segUrls.push(au); // 跳过子播放列表，只收真正的媒体分片
+              if (!/\.m3u8?(\?.*)?$/i.test(au)) segItems.push({ u: au, dur: pendingDur }); // 跳过子播放列表，只收真正的媒体分片
             } catch (e) {}
+            pendingDur = 6; // 该分片已配对，重置（同一分片只吃紧邻其上的一个 EXTINF）
+          } else {
+            const dm = tt.match(/^#EXTINF:([\d.]+)/);
+            if (dm) pendingDur = parseFloat(dm[1]); // 记下 EXTINF，与紧随其后的分片行配对
           }
           return rawMode ? line : rewrite(line);
         }).join("\n");
         plCachePut(plKey, out); // 写入播放列表缓存，供后续回源复用（降低上游压力、稳输出）
-        if (segUrls.length) prefetchSegments(segUrls, relayRef); // 提前拉取接下来要播的分片（read-ahead）
+        if (segItems.length) prefetchSegments(segItems, relayRef); // 提前拉取接下来要播的分片（read-ahead，按时长预算）
         res.writeHead(200, { "Content-Type": "application/vnd.apple.mpegurl", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" });
         res.end(out);
       });

@@ -507,6 +507,14 @@ class MainActivity : AppCompatActivity() {
         // 诊断仍完整写入 logcat（tag=TvLive），需要时 adb logcat 可取，不影响用户。
         val root = webDiag.firstOrNull { SEVERE_RE.containsMatchIn(it) } ?: webDiag.first()
         Log.w("TvLive", "replay-diag: $root  (共 ${webDiag.size} 条)")
+        // v1.4.6：确定性错误（SEVERE_RE 命中）恢复上屏，只写状态行、不再挂常驻「⚠」横条。
+        // 背景：v0.3.31 修完「链接不完整」后，旧小米电视回放仍不播，而屏上没有任何线索
+        // （兜底失败/能力不足的根因全被 v1.4.4 藏进 logcat 了）。折中：普通提示继续不上屏，
+        // 只有「自建播放失败 / hls 致命错误 / 能力不足」这类铁定要坏的根因才显出来——
+        // 用户拍张照就能把根因带回来，平时依然干净。
+        if (SEVERE_RE.containsMatchIn(root) && mode == MODE_REPLAY) {
+            tvStatus.text = "⚠ ${root.take(120)}"
+        }
     }
 
     /** 处理注入脚本的主动上报（见 TvNavScript / ReplayRescueScript 里的 report，格式：__TVNAV__ <kind> <内容>） */
@@ -1040,6 +1048,7 @@ class MainActivity : AppCompatActivity() {
                 val v = input.text.toString().trim()
                 if (v.startsWith("http://") || v.startsWith("https://")) {
                     Prefs.backendUrl = v
+                    Prefs.backendCustomized = true   // 用户手动指定过后端：远程配置不再覆盖 base（仅更新访问码）
                     webViewLoaded = false     // 后端变了，回放页需重新加载
                     loadData()                // 重新拉频道与配置
                 } else {
