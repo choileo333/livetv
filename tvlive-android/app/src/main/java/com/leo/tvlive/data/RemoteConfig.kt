@@ -78,12 +78,14 @@ object RemoteConfig {
     }
 
     /** 健康校验：真实请求后端 /api/health，2xx 且返回 ok:true 才算通过 */
-    private fun healthy(cfg: Cfg): Boolean = try {
-        val u = "${cfg.base.trimEnd('/')}/api/health?sharecode=${cfg.code}"
-        val text = httpGet(u, HEALTH_TIMEOUT_MS) ?: return false
-        JSONObject(text).optBoolean("ok", false)
-    } catch (e: Exception) {
-        false
+    private fun healthy(cfg: Cfg): Boolean {
+        return try {
+            val u = "${cfg.base.trimEnd('/')}/api/health?sharecode=${cfg.code}"
+            val text = httpGet(u, HEALTH_TIMEOUT_MS) ?: return false
+            JSONObject(text).optBoolean("ok", false)
+        } catch (e: Exception) {
+            false
+        }
     }
 
     /** 极简 GET（纯 JDK，无第三方依赖），失败/非 2xx 返回 null */
