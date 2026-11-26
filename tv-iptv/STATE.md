@@ -25,8 +25,16 @@
 | 服务 | 地址 | 状态 |
 |---|---|---|
 | 本地后端 | `http://localhost:8899/` | ⏸ 当前**未运行**（需本地调试时按下方命令启动） |
-| 云端部署·新（v0.3.32 起用） | **https://tvlive-relay-09367.app.workbuddy.host/** | ✅ 运行中，`/api/health` 返回 `version:0.3.32`（2026-11-22 22:5x 实测）；访问码 `GJLDAIGP4G` |
-| 云端部署·旧（兜底保留） | https://tvlive-relay.app.workbuddy.host/ | ⚠️ 冻结在 `0.3.31`（发布源目录已删、无法重发布），访问码 `CICKFPDYZQ`，旧版 App 仍指向它 |
+| 云端部署·当前（v0.3.34 起用） | **https://tvlive-relay-74706.app.workbuddy.host/** | ✅ 运行中，`/api/health` 返回 `version:0.3.34`（2026-11-26 11:5x 实测）；访问码 `7HS2BYS5R4` |
+| 云端部署·上一代（兜底保留） | https://tvlive-relay-09367.app.workbuddy.host/ | ⚠️ 冻结在 `0.3.32`（发布源目录已删、无法覆盖发布），访问码 `GJLDAIGP4G` |
+| 云端部署·更旧（已失效） | https://tvlive-relay.app.workbuddy.host/ | ⛔ 冻结在 `0.3.31`，仅极旧版本 App 可能仍指向它 |
+
+> **⚠️ 2026-11-26 重大变更**：后端重发布到新应用 `tvlive-relay-74706`（旧应用源目录已删无法覆盖），
+> 平台**换发新访问码** `7HS2BYS5R4`。三处必须一致：server.js `SHARE_CODE` ↔ `remote-config.json` sharecode ↔
+> App `Backend.SHARE_CODE`。App v1.4.8+ 通过 remote-config（GitHub 三镜像）自动跟随，无需重装；
+> remote-config.json 已推送 GitHub（choileo333/livetv main @ e585d2e）。
+- 发布源目录（2026-11-26 起）：**`D:/WorkBuddy/LIVETV/tv-iptv/backend`**（与维护仓库同目录，改完直接发布即可），
+  `domainPrefix = tvlive-relay`。
 
 > **⚠️ 2026-11-22 重大变更**：后端重发布到新应用（平台按发布源目录匹配，旧应用源目录已删无法覆盖），
 > 平台**换发新访问码** `GJLDAIGP4G`。三处必须一致：server.js `SHARE_CODE` ↔ App `Backend.SHARE_CODE` ↔
