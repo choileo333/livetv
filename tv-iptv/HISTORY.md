@@ -2,6 +2,46 @@
 
 > 按用户既定规范：每次改动记录「时间 + 改了什么 + 为什么」。文件名/程序内含版本号，原稿只读、新版本独立派生。
 
+## v0.3.33 — 2026-11-26（回放全端黑屏排查：回放站换新域 dodotv25 + embed 超时补 504）
+
+### 1) 现象与定位
+- 客户反馈：手机端 / 电视端 / 网页端回放全部无法播放，但 IE 浏览器直连回放站可正常播放。
+- 全链路实测（列表页 → 详情页 → 播放器页 → 真实流）：前两层（dodotv22 列表/详情，Cloudflare）一切正常；
+  **播放器页 `xiaoca.top/one/onet.php` 返回 HTTP 200 空内容（0 字节）**，注入补丁后的代理响应只剩 1KB 脚本 → 播放器无流地址 → 三端全黑屏。
+- 拦截方式排查（交叉验证）：非 UA / Referer / Cookie / Sec-Fetch 头 / TLS1.2 vs 1.3 / HTTP1.1 vs h2 / 代理出口 IP（--noproxy 直连同结果）；
+  curl(schannel)、python(OpenSSL)、Node、无头 Edge(Chromium)、PowerShell(.NET) 全部拿到空 200，海外代理节点返回 500；
+  唯一例外是用户实测 IE11 可播 → 判定为 xiaoca.top 上游临时启用了按客户端指纹识别的反爬（WinINET 老指纹放行）。
+- **同日上午复查：反爬已撤销/间歇关闭**，xiaoca.top 恢复正常返回完整播放器页（curl/Node 均可拉到）。
+  该站防护状态会间歇变化，属上游行为，无法在服务端根治；若复发三端会再次同时黑屏，届时优先怀疑此处。
+
+### 2) 播放器页结构变化（重要，后续维护参考）
+- 播放器改版：Artplayer + hls.js-0.14.17，真实流地址不再明文出现在 iframe `?url=` 参数里（该参数现为幌子/旧格式，直连会 404）。
+- 真实流 = 页面内加密变量解密所得：`phpsiteEc2`（base64）→ XOR 密钥 `phpsitekey3="phpsite03"` → 再 base64 → `vid`。
+  解密在 common.js 中纯前端完成，无需服务端参与 → 现有 PLAYER_PATCH（XHR/fetch 改走 /api/relay）架构完全兼容。
+- 实测链路（v0.3.33 本地 8899 端到端全通）：
+  1. `/api/embed` 列表页/详情页 → 200，导航/iframe 改写正常（白名单自动跟随新 REPLAY_URL）；
+  2. `/api/embed` 播放器页 → 200，phpsiteEc2 完整 + PLAYER_PATCH 注入正常；
+  3. `/api/relay?url=<解密出的 token 流>&ref=xiaoca.top&raw=1` → m3u8 200（VOD 列表，需 Referer: https://xiaoca.top/）；
+  4. 分片（files3.imgtu.top / files3.downk.cc，域名会轮换）→ **不需要 Referer**，中继裸拉 200（1MB TS / 0.4s）。
+
+### 3) 改动（仅 backend/server.js）
+- **`REPLAY_URL` dodotv22.com → dodotv25.com**（回放站主域再度更换，dodotv20→dodotv22→dodotv25；
+  三域共用同一 xiaoca.top 播放器，换域不解决播放器问题，仅保持入口最新）。`/api/config` 下发的 replayUrl 随之更新，
+  App v1.4.7+ 无需发版即可跟随（App 每次启动从 `/api/config` 拉回放地址）。
+- **embedPage 超时补 504**：原先上游 20s 超时仅 destroy 请求、不回任何响应，客户端会无限挂起
+  （实测 xiaoca.top 慢时可 >20s）；现超时回 `504 embed timeout`。relayStream 本就有 504，未动。
+- `VERSION 0.3.32 → 0.3.33`。
+
+### 4) 验证
+- `node --check` 通过；本地起服 v0.3.33：`/api/health` 返回新版本号 + SBS/KBS 签名自动刷新正常；
+  上述 4 步端到端全部 200（列表 → 详情 → 播放器 → m3u8 → 分片）。
+
+### 5) 部署提醒
+- 需在「设置—数据管理—应用」重部署后端（发布源目录用本仓库 `tv-iptv/backend`；原 `D:\zcode_project\livetv` 部署目录已不存在）
+  或用 backend/ 的 Docker 套件自建后生效；`/api/health?sharecode=...` 应返回 `version: 0.3.33`。
+- 遗留风险：xiaoca.top 反爬若再启用，三端回放会再次同时黑屏（IE 仍可能可播）；备选方案为换回放源站。
+
+---
 ## v0.3.32 — 2026-11-22（晚高峰大面积卡顿优化：预取按时长预算自适应 + 摘除 4 个死台）
 
 ### 1) 现象与定位（全量实测，57 台走真实中继链路逐台测速）

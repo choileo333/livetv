@@ -14,7 +14,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 8899;
-const VERSION = "0.3.32"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
+const VERSION = "0.3.33"; // 后端版本号（逐版变更见项目根目录 HISTORY.md）
 // 托管平台网关访问码（v0.3.28）：平台对线上链接加 sharecode 校验——每个请求必须带
 // ?sharecode=... 或携带首访时下发的 __wb_rsc cookie，否则网关直接拦「链接不完整」(403)。
 // 浏览器首次打开带码链接后有 cookie，后续请求都放行；但安卓原生播放器(ExoPlayer)不管理 cookie，
@@ -26,7 +26,7 @@ const SHARE_CODE = "GJLDAIGP4G";
 // 往期回放站地址（前端「回放」模式的默认地址）。
 // 因该地址可能经常变动：前端页面内可随时覆盖（存浏览器 localStorage），无需改代码/重新部署；
 // 此处仅作默认值，改这里需重新部署才生效。
-const REPLAY_URL = "https://dodotv22.com/show.php?tid=3&order_type="; // 回放站主域会定期更换（dodotv20→dodotv22，详见 HISTORY）；改这里后重启后端即生效，embed 白名单/Referer 自动跟随
+const REPLAY_URL = "https://dodotv25.com/show.php?tid=3&order_type="; // 回放站主域会定期更换（dodotv20→dodotv22→dodotv25，2026-11-26 起用新域，详见 HISTORY）；改这里后重启后端即生效，embed 白名单/Referer 自动跟随
 
 // —— 中继代理复用 TCP/TLS 连接（keep-alive）：默认每个分片都新建连接，远距离 CDN 建连开销大、易卡顿；
 // 复用连接后分段拉取延迟显著下降。rejectUnauthorized:false 仅用于本地中继demo，放宽对部分 CDN 证书链的校验以提高可达性。
@@ -890,7 +890,7 @@ function embedPage(req, res, u, depth = 0) {
     });
   });
   r.on("error", () => { try { res.writeHead(502); res.end("embed error"); } catch (e) {} });
-  r.on("timeout", () => { try { r.destroy(); } catch (e) {} });
+  r.on("timeout", () => { try { r.destroy(); } catch (e) {} try { if (!res.headersSent) { res.writeHead(504); res.end("embed timeout"); } } catch (e) {} }); // v0.3.33：超时也要回 504，否则客户端拿到的是无限挂起的连接（实测回放站慢时可 >20s）
   req.on("close", () => { try { r.destroy(); } catch (e) {} });
   r.end();
 }

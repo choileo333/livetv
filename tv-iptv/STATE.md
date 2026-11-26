@@ -7,7 +7,12 @@
 ---
 
 ## 一、当前版本
-- 后端 `server.js`：**v0.3.17**（`VERSION` 常量在第 17 行；`/api/health` 会返回版本号）
+- 后端 `server.js`：**v0.3.33**（`VERSION` 常量在第 17 行；`/api/health` 会返回版本号）
+  - **v0.3.33（2026-11-26）：回放站换新域 dodotv25.com + embed 超时补 504**。当日排查「三端回放全黑屏、IE 可播」：
+    根因是播放器域 `xiaoca.top` 间歇性反爬（对程序化客户端返回空 200，IE 老指纹放行；同日稍晚已撤销）。
+    播放器已改版为 Artplayer+hls.js，真实流藏在页内加密变量（phpsiteEc2 → XOR "phpsite03" → base64，纯前端解密，与 PLAYER_PATCH 兼容）。
+    分片域名轮换（files3.imgtu.top / files3.downk.cc）且不需 Referer；m3u8 需 `Referer: https://xiaoca.top/`（中继 &ref= 白名单已支持）。
+    **复发预警：xiaoca.top 反爬若再启用，三端回放会再次同时黑屏**，详见 HISTORY v0.3.33。
   - v0.3.17：**删除 4 台**（EBS 2TV id=109、Gugak TV id=119、国防 TV id=122、RTV id=147）；**8 台改韩文名**（101→TV 조선、100→TV조선2、118→농협tv、130→대전MBC、133→청주SBS、135→제주MBC、136→전주SBS、166→강원SBS），`CHANNELS` 与 `EPG_TITLES` 同步。总数 **59→55**，韩国 **32→28**。
   - v0.3.16：新增 **G1 (SBS 江原)**（id=166，`relay:false` 仅本机直连，v0.3.17 已改名 강원SBS）；SBS 九家地方台全量复查（结果见 HISTORY v0.3.16 表）。
   - v0.3.15：**CCTV-1（id=165）/ CCTV-13（id=164）** 换成江苏电信 IPTV 网关真台源 `219.147.245.238:25480`（ffmpeg 抽帧验证台标）；**凤凰卫视（id=163）摘除**——系统性排查后确认无任何可用公开源（详见 HISTORY v0.3.15 排查表）。
@@ -29,7 +34,7 @@
 
 - 本地启动命令（如需重启）：
   ```
-  cd backend目录（维护仓库 tv-iptv/backend 或 D:/zcode_project/livetv/tv-iptv/backend）
+  cd backend目录（维护仓库 tv-iptv/backend，如 D:/WorkBuddy/LIVETV/tv-iptv/backend）
   node server.js
   ```
 - 停止本地后端（8899）：
