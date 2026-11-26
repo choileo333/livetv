@@ -2,6 +2,30 @@
 
 > 按用户既定规范：每次改动记录「时间 + 改了什么 + 为什么」。文件名/程序内含版本号，原稿只读、新版本独立派生。
 
+## v0.3.34 — 2026-11-26（重部署后端到新应用：换访问码 + remote-config 更新）
+
+### 1) 背景
+- v0.3.33 改完（REPLAY_URL→dodotv25）需要重部署，但原发布源目录（D:\zcode_project\livetv\...）已不存在，
+  平台按发布源目录匹配应用 → 只能从维护仓库新目录（D:/WorkBuddy/LIVETV/tv-iptv/backend）发布 → **创建新应用并换发新访问码**。
+
+### 2) 改动
+- 新应用：`https://tvlive-relay-74706.app.workbuddy.host/`，新访问码 `7HS2BYS5R4`（替换原 tvlive-relay-09367 / GJLDAIGP4G）。
+- `server.js`：`SHARE_CODE → 7HS2BYS5R4`（三处一致性要求的第 1 处；App 侧由 remote-config 自动跟进，无需改代码发版）。
+- `remote-config.json`：base/sharecode 同步更新（v:2）——App v1.4.8+ 启动时自动拉取并做健康校验后切换，所有设备无需重装。
+  **必须推送到 GitHub（choileo333/livetv main）才生效**（jsdelivr / gh-proxy / raw 三镜像源）。
+- `VERSION 0.3.33 → 0.3.34`。
+
+### 3) 验证（线上实测）
+- `/api/health?sharecode=7HS2BYS5R4` → `version:0.3.34, ok:true`；`/api/config` → 下发 dodotv25 回放地址；
+- `/api/embed` 播放器页 → 200（8934 字节，phpsiteEc2 完整 + PLAYER_PATCH 注入正常）。
+- 旧应用 tvlive-relay-09367（0.3.32）仍在线兜底，指向它的旧配置不受影响。
+
+### 4) 部署提醒
+- **remote-config.json 尚未推送到 GitHub**（本地无 gh CLI/凭据），需用户推送后 App 才会自动切换；
+  在此之前 App 仍指向旧应用 tvlive-relay-09367（回放当前可用，因 xiaoca.top 反爬已撤销）。
+- 三处一致性：server.js SHARE_CODE ↔ remote-config.json sharecode ↔ App Backend.SHARE_CODE（后者仅在下一次发版时更新内置默认值）。
+
+---
 ## v0.3.33 — 2026-11-26（回放全端黑屏排查：回放站换新域 dodotv25 + embed 超时补 504）
 
 ### 1) 现象与定位
